@@ -56,4 +56,16 @@ Una vez creado todo lo anterior, se puede ver las tablas de la base de datos en 
 Para ejecutar la práctica localmente:
 1) Crear entorno de python.
 2) Permitir la ejecución de scripts `Set-ExecutionPolicy RemoteSigned -Scope CurrentUser`.
-3) 
+3) Ejecutar comandos para ejecución local (readme P4).
+4) Para ejecutar los comandos de Docker, en el caso que no funcionen los del readme de la práctica 4:
+    - Definir variables de entorno:
+ ``$env:DB_TYPE="postgres";$env:DB_HOST="localhost";$env:DB_NAME="ticketsdb";$env:DB_USER="postgres";$env:DB_PASS:"postgres``
+    - Ejecutar docker:
+ ``docker run --name tickets-postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=ticketsdb -p 5432:5432 -d postgres:15``
+    - Compilar el proyecto:
+    ``docker build -t tickets-app:latest``
+    - Ejecutar aplicación:
+    ``docker run --rm -p 8080:8080 -e DB_TYPE=postgres -e DB_HOST=host.docker.internal -e DB_NAME=ticketsdb -e DB_USER=postgres -e DB_PASS=postgres tickets-app:latest``
+6) En la configuración del Front poner:
+    - Donde se ejecute la aplicación, normalmente en https://127.0.0.1:8080.
+    - Contraseña NO necesaria.
