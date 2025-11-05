@@ -3,12 +3,12 @@ from pydantic import ValidationError
 import psycopg2
 from botocore.exceptions import ClientError
 from models.ticket import Ticket
-from db.factory import DatabaseFactory
+from db.dynamodb_db import DynamoDBDatabase
 
 app = Flask(__name__)
 
 try:
-    db = DatabaseFactory.create()
+    db = DynamoDBDatabase()
 except ValueError as e:
     raise RuntimeError(f"Error initializing DB: {e}") from e
 

@@ -57,7 +57,8 @@ Se paga por petición y por tiempo de computación (1M de peticiones gratuitas -
     - Nombre de rol de IAM.
     - Nombre de la imagen: tickets-app:latest
 5) Cuando termine de craerse la última pila con el Load Balancer, se busca _API Gateway_ y se entra en la de la aplicación, pudiendo acceder a la clave. Además, ir a Configuración de la API para copiar la URL (punto de enlace predeterminado).
-6) Copiar la clave de API y la URL de la API en el Frontend para acceder.
+6) Copiar la clave de API y la URL de la API en el Frontend para acceder. Añadirle a la URL de la API /prod.
+
 
 Una vez creado todo lo anterior, se puede ver las tablas de la base de datos en DynamoDB/tablas y los elementos de ellas.
 
