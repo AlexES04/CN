@@ -5,8 +5,12 @@
 **Fecha:** Noviembre del 2025
 
 ## Introducción
-Este modelo (acoplado) cuenta con una instancia EC2 o ECS que ejecutará la acción pedida (CRUD).
-Se va a utilizar una base de datos DynamoDB por la simplicidad de la aplicación web, ya que los accesos no requieren consultas complejas. ADemás, es escalable e ideal si tiene picos de tráfico, se paga por uso y AWS se encarga de todo. 
+Este es el modelo acoplado de la primera práctica entregable de la asignatura de Computación en la Nube, de la Universidad de Las Palmas de Gran Canaria. El diagrama de la infraestructura se presenta en la siguiente imagen
+
+
+La aplicación web que se despliega simula una lista de la compra donde se pueden añadir, editar, visualziar y eliminar elementos, con una categoría y una cantidad especificadas. Básciamente, se permiten las operaciones CRUD.
+
+Se va a utilizar una base de datos DynamoDB por la simplicidad de la aplicación web, ya que los accesos no requieren consultas complejas. Además, es escalable e ideal si tiene picos de tráfico, se paga por uso y AWS se encarga de todo. 
 
 ## Explicaciones y conceptos
 Las **EC2** (Elastic Compute Cloud) permiten alquilar capacidad de computación de manera flexible y escalable, proporcionando servidores virtuales completos donde se tiene control total sobre el SO, aplicaciones y configuración de red.
@@ -51,6 +55,7 @@ Se paga por petición y por tiempo de computación (1M de peticiones gratuitas -
     - 2 subnets.
     - VPC.
     - Nombre de rol de IAM.
+    - Nombre de la imagen: tickets-app:latest
 5) Cuando termine de craerse la última pila con el Load Balancer, se busca _API Gateway_ y se entra en la de la aplicación, pudiendo acceder a la clave. Además, ir a Configuración de la API para copiar la URL (punto de enlace predeterminado).
 6) Copiar la clave de API y la URL de la API en el Frontend para acceder.
 
@@ -99,7 +104,7 @@ Dentro de los recursos se pueden definir los siguientes aspectos:
 
 ## Archivo _main.yml_
 ### Balanceador de carga
-En la definición del balanceador de carga se especifica el tipo (network) y el Schema (internal) que indica que es intero, que solo será accesible dentro de la VPC.
+En la definición del balanceador de carga se especifica el tipo (network) y el Schema (internal) que indica que es interno, que solo será accesible dentro de la VPC.
 
 ### Grupo Objetivo
 El grupo objetivo (Target Group) agrupa a los destinos y define cómo el balanceador de carga debe verificar el estado. El TargetType define de qué tipo son los destinos registrados (ip, en este caso).
@@ -110,7 +115,7 @@ El listener es la parte del balanceador de carga que espera las peticiones en un
 
 ### Clúster ECS
 Un clúster ECS es una agrupación lógica de servidores EC2 o Fargate donde se ejecutan contenedores. La definición de tarea es el plano que le dice a ECS cómo debe lanzar el contenedor (qué imagen, cantidad de CPU y memoria, puertos y roles de IAM necesarios). La propiedad ``NetworkMode: awsvpc`` indica que cada tarea tendrá su propia interfaz de red elástica y dirección IP privada (obligatorio para Fargate). ``RequiresCompatibilities: [FARGATE]`` especifica la necesidad de ejecución en el tipo de lanzamiento Fargate. ``ExecutionRoleArn`` es el rol que usa el agente ECS para tareas de infraestructura y ``TaskRoleArn`` es el rol que usa la aplicación dentro del contendor para interactuar con otros servicios. ContainerDefinitions es la lista de contenedores que se ejecutarán en la tarea que se está definiendo.
-El servicio ECS tiene el parámetro DependsOn: [] que indica qeu no debe intentar iniciarse hasta que el recurso especificado se haya creado correctamente. La propiedad DesiredCount: indica el número de instancias que debe mantener la tarea en ejecución en todo momento. La propiedad ``AssignPublicIP: ENABLED`` asigna una dirección IP pública a cada tarea.
+El servicio ECS es el que orquesta los contenedores y es administrado por AWS, permitiendo que se ejecuten contenedores en un clúster. Tiene el parámetro DependsOn: [] que indica que no debe intentar iniciarse hasta que el recurso especificado se haya creado correctamente. La propiedad DesiredCount: indica el número de instancias que debe mantener la tarea en ejecución en todo momento. La propiedad ``AssignPublicIP: ENABLED`` asigna una dirección IP pública a cada tarea.
 
 ### API
 Primero se crea un VPC Link con ``VPCLink``, que actúa como túnel de red privado que permite que las integraciones de API Gateway accedan a recursos internos. La propiedad ``TargetArns`` especifica el ARN como destino de la conexión.
