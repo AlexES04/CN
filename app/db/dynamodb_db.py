@@ -2,7 +2,7 @@ import boto3
 from botocore.exceptions import ClientError
 from typing import List, Optional
 from .db import Database
-from models.ticket import Ticket
+from models.product import Product
 import os
 
 class DynamoDBDatabase(Database):
@@ -18,57 +18,54 @@ class DynamoDBDatabase(Database):
             self.table.load()
         except ClientError as e:
             if e.response['Error']['Code'] == 'ResourceNotFoundException':
-                # La tabla no existe, crearla
                 print(f"Creando tabla DynamoDB '{self.table_name}'...")
                 table = self.dynamodb.create_table(
                     TableName=self.table_name,
                     KeySchema=[
                         {
-                            'AttributeName': 'ticket_id',
+                            'AttributeName': 'product_id',
                             'KeyType': 'HASH'
                         }
                     ],
                     AttributeDefinitions=[
                         {
-                            'AttributeName': 'ticket_id',
+                            'AttributeName': 'product_id',
                             'AttributeType': 'S'
                         }
                     ],
                     BillingMode='PAY_PER_REQUEST'
                 )
                 
-                # Esperar a que la tabla esté activa
                 table.wait_until_exists()
                 
-                # Actualizar referencia a la tabla
                 self.table = table
             else:
                 raise
     
-    def create_ticket(self, ticket: Ticket) -> Ticket:
-        self.table.put_item(Item=ticket.model_dump())
-        return ticket
+    def create_product(self, product: Product) -> Product:
+        self.table.put_item(Item=product.model_dump())
+        return product
     
-    def get_ticket(self, ticket_id: str) -> Optional[Ticket]:
-        response = self.table.get_item(Key={'ticket_id': ticket_id})
+    def get_product(self, product_id: str) -> Optional[Product]:
+        response = self.table.get_item(Key={'product_id': product_id})
         if 'Item' in response:
-            return Ticket(**response['Item'])
+            return Product(**response['Item'])
         return None
     
-    def get_all_tickets(self) -> List[Ticket]:
+    def get_all_products(self) -> List[Product]:
         response = self.table.scan()
-        tickets = [Ticket(**item) for item in response.get('Items', [])]
-        return sorted(tickets, key=lambda x: x.position)
+        products = [Product(**item) for item in response.get('Items', [])]
+        return products
     
-    def update_ticket(self, ticket_id: str, ticket: Ticket) -> Optional[Ticket]:
-        ticket.update_timestamp()
-        ticket.ticket_id = ticket_id
-        self.table.put_item(Item=ticket.model_dump())
-        return ticket
+    def update_product(self, product_id: str, product: Product) -> Optional[Product]:
+        product.update_timestamp()
+        product.product_id = product_id
+        self.table.put_item(Item=product.model_dump())
+        return product
     
-    def delete_ticket(self, ticket_id: str) -> bool:
+    def delete_product(self, product_id: str) -> bool:
         response = self.table.delete_item(
-            Key={'ticket_id': ticket_id},
+            Key={'product_id': product_id},
             ReturnValues='ALL_OLD'
         )
         return 'Attributes' in response

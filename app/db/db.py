@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from models.ticket import Ticket
+from models.product import Product
 
 class Database(ABC):
     
@@ -9,21 +9,21 @@ class Database(ABC):
         pass
     
     @abstractmethod
-    def create_ticket(self, ticket: Ticket) -> Ticket:
+    def create_product(self, product: Product) -> Product:
         pass
     
     @abstractmethod
-    def get_ticket(self, ticket_id: str) -> Optional[Ticket]:
+    def get_product(self, product_id: str) -> Optional[Product]:
         pass
     
     @abstractmethod
-    def get_all_tickets(self) -> List[Ticket]:
+    def get_all_products(self) -> List[Product]:
+        pass
+    
+    @abstracts_method
+    def update_product(self, product_id: str, product: Product) -> Optional[Product]:
         pass
     
     @abstractmethod
-    def update_ticket(self, ticket_id: str, ticket: Ticket) -> Optional[Ticket]:
-        pass
-    
-    @abstractmethod
-    def delete_ticket(self, ticket_id: str) -> bool:
+    def delete_product(self, product_id: str) -> bool:
         pass

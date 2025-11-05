@@ -1,10 +1,10 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: "Tickets ECR Repository"
+Description: "Products ECR Repository"
 
 Parameters:
   RepositoryName:
     Type: String
-    Default: tickets-app
+    Default: products-app
     Description: ECR repository name
 
 Resources:
