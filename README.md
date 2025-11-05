@@ -6,15 +6,16 @@
 
 ## Introducción
 Este modelo (acoplado) cuenta con una instancia EC2 o ECS que ejecutará la acción pedida (CRUD).
+Se va a utilizar una base de datos DynamoDB por la simplicidad de la aplicación web, ya que los accesos no requieren consultas complejas. ADemás, es escalable e ideal si tiene picos de tráfico, se paga por uso y AWS se encarga de todo. 
 
 ## Explicaciones y conceptos
 Las **EC2** (Elastic Compute Cloud) permiten alquilar capacidad de computación de manera flexible y escalable, proporcionando servidores virtuales completos donde se tiene control total sobre el SO, aplicaciones y configuración de red.
-Las ventajas principales son que incluyen escalabilidad automática, pago por uso real y disponibilidad global a través de múltiples regiones y zonas de disponibilidad.
+Las ventajas principales son que incluyen escalabilidad automática, pago por tiempo real y disponibilidad global a través de múltiples regiones y zonas de disponibilidad.
 Para un inicio, sería recomendable un modelo EC2 de tipo _On-Demand_ (pago por segundo). Si la aplicación llegara a ser más estable y grande, de tipo _Reserved Instances_.
 
 
 La **distribución de carga** permite que múltiples recursos trabajen de manera coordinada para atender peticiones de forma eficiente. Los balanceadores de carga son, precisamente, esos intermediarios inteligentes que dirigen el tráficohacia los servidores más apropiados según unos criterios indicados.
-El Elastic Load Balancer (ELB) es un servicio de carga completamente gestionado por AWS. Existe el Application Load Balancer y el Network Load Balancer. Nos interesa el Application Load Balancer (ALB) para peticiones HTTP/HTTPS, ya que es ideal para aplicaciones web.
+El Elastic Load Balancer (ELB) es un servicio de carga completamente gestionado por AWS. Existe el Application Load Balancer y el Network Load Balancer. Para peticiones HTTP/HTTPS interesa el Application Load Balancer (ALB), ya que es ideal para aplicaciones web. De todas formas, se usará el NLB porque está diseñado para un rendimiento alto y baja latencia.
 
 
 Las **ECS** (Elastic Container Service) permiten el despligue y gestión de contenedores Docker en AWS de forma escalable y eficiente, funcionando como un balanceador de carga sobre las instancias EC2 disponibles previamente.
@@ -69,3 +70,37 @@ Para ejecutar la práctica localmente:
 6) En la configuración del Front poner:
     - Donde se ejecute la aplicación, normalmente en https://127.0.0.1:8080.
     - Contraseña NO necesaria.
+
+
+## Archivo _ecr.yml_
+La propiedad `ImageScanningConfiguration` configura el escaneo de seguridad de las imágenes y el parámetro _SCanOnPush_ indica si se activa o desactiva el escaneo automático.
+
+La propiedad `LifecyclePolicy` define cómo el ECR debe limpiar las imágenes del repositorio ayudando a controlar costos. `LifecyclePolicyText: |` indica que el valor es un bloque de texto multilínea y | preserva los saltos de línea y el formato.
+- ``rulePriority: 1`` : prioridad, las reglas con menor número se evalúan primero.
+- ``selection`` , ``tagStatus``: aplica la regla a imágenes con cualquier estado de etiqueta.
+- ``countType: "imageCountMoreThan"``: condición es cuando el número de imágenes exceda un límite.
+- ``countNumber: 2``: límite para que se cumpla la condición.
+- ``type: expire``: acción es eliminar imágenes que cumplan la condición.
+
+Básicamente, esta políotica mantiene las 2 imágenes más recientes y elimina automáticamente cualquiera adicional. La imagen es un paquete que contiene la infraestructura de la aplicación: código, dependencias, configuración del sistema y capa del SO.
+
+Dentro de las salidas del .yml tenemos:
+- ECR URI: URL completa para acceder al repositorio.
+
+## Archivo _db_dynamo.yml_
+Dentro de los recursos se pueden definir los siguientes aspectos:
+- AttributeName: ticket_id: atributo clave.
+- AttributeType: tipo de dato (S -> String, N -> número, B -> binario).
+- KeySchema: qué atributos se usarán como claves primarias.
+- KeyType: especifica cuál es la clave de partición (HASH) o de ordenación (RANGE).
+- BillingMode: modo de facturación y capacidad de la tabla. PAY_PER_REQUEST (a demanda) o PROVISIONES (se especifican las unidades de r/w).
+
+## Archivo _main.yml_
+En la definición del balanceadro de carga se especifica el tipo (network) y el Schema (internal) que indica que es intero, que solo será accesible dentro de la VPC.
+
+El grupo objetivo (Target Group) agrupa a los destinos y define cómo el balanceador de carga debe verificar el estado. El TargetType define de qué tipo son los destinos registrados (ip, en este caso).
+
+El listener es la parte del balanceador de carga que espera las peticiones en un puerto/protocolo específico y luego dirige el tráfico a un Grupo Objetivo. La propiedad DefaultActions define la acción que hacer con el tráfico que recibe el listener. El ``Type: forward`` especifica que se reenvíe el tráfico al grupo objetivo que se especifique en ``TargetGroupArn``. Se asocia al balanceador de carga al parámetro que se especifique en ``LoadBalancerArn``.
+
+Un clúster ECS es una agrupación lógica de servidores EC2 o Fargate donde se ejecutan contenedores. La definición de tarea es el plano que le dice a ECS cómo debe lanzar el contenedor (qué imagen, cantidad de CPU y memoria, puertos y roles de IAM necesarios). La propiedad ``NetworkMode: awsvpc`` indica que cada tarea tendrá su propia interfaz de red elástica y dirección IP privada (obligatorio para Fargate). ``RequiresCompatibilities: [FARGATE]`` especifica la necesidad de ejecución en el tipo de lanzamiento Fargate. ``ExecutionRoleArn`` es el rol que usa el agente ECS para tareas de infraestructura y ``TaskRoleArn`` es el rol que usa la aplicación dentro del contendor para interactuar con otros servicios. ContainerDefinitions es la lista de contenedores que se ejecutarán en la tarea que se está definiendo.
+El servicio ECS tiene el parámetro DependsOn: [] que indica qeu no debe intentar iniciarse hasta que el recurso especificado se haya creado correctamente. La propiedad DesiredCount: indica el número de instancias que debe mantener la tarea en ejecución en todo momento. La propiedad ``AssignPublicIP: ENABLED`` asigna una dirección IP pública a cada tarea.
