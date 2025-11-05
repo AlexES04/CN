@@ -31,6 +31,8 @@ Las **APIs** definen cómo los sistemas de software se comunican entre sí, actu
 
 Una **pila** en CloudFormation es una colección de recursos que se gestionan como una única unidad, como si fuera un contenedor lógico para todos los componentes de infraestructura de la aplicación (ej. EC2, ELB, SG...).
 
+Un **Endpoint** es un punt ode contacto o comunicación. En última instancia, es el dispositivo o servicio que se encuentra al final de un canal de comunicación. Puede ser una dirección física o una URL. Un API Endpoint es la URL específica de un servidor o servicio que una aplicación usa para interactuar con una API. Ejemplos de Endpoints: POST, GET, DELETE. Básiscamente, el Endpoint es la puerta de entrada a la funcionalidad de la aplicación, resultando en una coimbinación de la dirección base del servidor y la ruta específica que define la operación.
+
 
 Las **lambdas** son capaces de ejecutar un código como funciones virtuales independientes, sin necesidad de la gestión de servidores, lo que se conoce como _serverless_. Las lambdas están diseñadas especialmente para procesos cortos y eficientes, ya que estas se ejecutan por un tiempo limitado bajo demanda o eventos específicos. 
 Se paga por petición y por tiempo de computación (1M de peticiones gratuitas --> 0,2€/1M).
@@ -96,11 +98,34 @@ Dentro de los recursos se pueden definir los siguientes aspectos:
 - BillingMode: modo de facturación y capacidad de la tabla. PAY_PER_REQUEST (a demanda) o PROVISIONES (se especifican las unidades de r/w).
 
 ## Archivo _main.yml_
-En la definición del balanceadro de carga se especifica el tipo (network) y el Schema (internal) que indica que es intero, que solo será accesible dentro de la VPC.
+### Balanceador de carga
+En la definición del balanceador de carga se especifica el tipo (network) y el Schema (internal) que indica que es intero, que solo será accesible dentro de la VPC.
 
+### Grupo Objetivo
 El grupo objetivo (Target Group) agrupa a los destinos y define cómo el balanceador de carga debe verificar el estado. El TargetType define de qué tipo son los destinos registrados (ip, en este caso).
+
+### Listener
 
 El listener es la parte del balanceador de carga que espera las peticiones en un puerto/protocolo específico y luego dirige el tráfico a un Grupo Objetivo. La propiedad DefaultActions define la acción que hacer con el tráfico que recibe el listener. El ``Type: forward`` especifica que se reenvíe el tráfico al grupo objetivo que se especifique en ``TargetGroupArn``. Se asocia al balanceador de carga al parámetro que se especifique en ``LoadBalancerArn``.
 
+### Clúster ECS
 Un clúster ECS es una agrupación lógica de servidores EC2 o Fargate donde se ejecutan contenedores. La definición de tarea es el plano que le dice a ECS cómo debe lanzar el contenedor (qué imagen, cantidad de CPU y memoria, puertos y roles de IAM necesarios). La propiedad ``NetworkMode: awsvpc`` indica que cada tarea tendrá su propia interfaz de red elástica y dirección IP privada (obligatorio para Fargate). ``RequiresCompatibilities: [FARGATE]`` especifica la necesidad de ejecución en el tipo de lanzamiento Fargate. ``ExecutionRoleArn`` es el rol que usa el agente ECS para tareas de infraestructura y ``TaskRoleArn`` es el rol que usa la aplicación dentro del contendor para interactuar con otros servicios. ContainerDefinitions es la lista de contenedores que se ejecutarán en la tarea que se está definiendo.
 El servicio ECS tiene el parámetro DependsOn: [] que indica qeu no debe intentar iniciarse hasta que el recurso especificado se haya creado correctamente. La propiedad DesiredCount: indica el número de instancias que debe mantener la tarea en ejecución en todo momento. La propiedad ``AssignPublicIP: ENABLED`` asigna una dirección IP pública a cada tarea.
+
+### API
+Primero se crea un VPC Link con ``VPCLink``, que actúa como túnel de red privado que permite que las integraciones de API Gateway accedan a recursos internos. La propiedad ``TargetArns`` especifica el ARN como destino de la conexión.
+
+La propiedad ``RestAPI`` crea el contenedor principal de la API REST, ``ItemsResource`` crea el recurso /items, ``ParentId`` indica de qué es hijo, en este caso, /items es un hijo de la raíz de la API (/). ``ItemResource`` crea el recurso {id} y el ``ParentId`` en este caso indica que el recurso es hijo de /items, resultando al final en /items/{id}.
+
+Posteriormente se definen las operaciones del CRUD (POST, GET, PUT, DELETE), el parámetro ``AuthorizationType: NONE`` indica que la API Key será elúnico control de acceso, ``ApiKeyRequired: true`` fuerza al cliente a incluir una API Key válida.
+
+Dentro de la integración, ``Type: HTTP_PROXY`` hace que la solicitud se envía tal cual a la integración sin transformación, ``IntegrationHttpMethod`` el verbo HTTP con el que API Gateway llamará al Backend, ``Uri`` es la URL a la que la API Gateway enviará la solicitud. ``ConnectionType: VPC_LINK`` y ``ConnectionId: !Ref VPCLink`` especifica que debe usar VPC Link definido anteriormente. Dentro del manejo de parámetros ``RequestParameters:`` define los parámetros obligatorios, y ``integration.request.path.id`` le dice a la API Gateway qeu tome el valor del parámetro especificado lo pase como parte de la ruta al backend.
+
+Los métodos CORS (_Cross-Origin Resource Sharing_) son las reglas y cabeceras que usan los servidores/navegadores para determinar si es seguro que una página pueda acceder a recursos de otro dominio. Dentro de los ``OptionItemsMethod`` y ``OptionItemMethod`` se especifica un tipo ``Type: MOCK``, que indica que la respuesta se devuelve directamente desde API Gateway sin lamar al backend. ``IntegrationResponses`` y ``MethodResponses`` configuran las cabeceras HTTP necesarias para CORS, permitiendo GET, POST, PUT, DELETE, OPTIONS y cualquier origen ``*``.
+
+Por último, el despliegue para que la API sea accesible. ``APIDeployment`` representa una instantánea de la configuración actual de la API y el parámetro ``DependsOn: []`` niega el despliegue hasta que tdoso los métodos hayan sido definidos (CRUD+CORS). ``APIStage`` publica la implementación de la API y ``StageName: prod`` indica el nombre del entorno. La ``APIKey`` crea una clave de autenticación que los clientes deben usar si es requerido (``ApiKeyRequired: true``). ``UsagePlan`` define los límites de tasa y cuotas para la API y ``ApiStages`` asocia el plan de uso al Stage definido. ``UsagePlanKey`` asocia la APIKey con el UsagePlan, activando el requisito de la clave para el acceso.
+
+### Outputs
+En esta sección se exponen los valores imporantes de los recursos creados, que se podrán ver en la consola después de que el Stack se haya completado.
+
+Primeramente, el Endpoint de la API, que es la salica que porporciona la URL completa y funcional para interactuar con la API REST. El ID de la API Key proporciona el identificador único de la clave que se acaba de crear para autenticar solicitudes.
