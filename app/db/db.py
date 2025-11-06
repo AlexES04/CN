@@ -20,7 +20,7 @@ class Database(ABC):
     def get_all_products(self) -> List[Product]:
         pass
     
-    @abstracts_method
+    @abstractmethod
     def update_product(self, product_id: str, product: Product) -> Optional[Product]:
         pass
     
