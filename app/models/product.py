@@ -13,7 +13,6 @@ class Product(BaseModel):
     
     quantity: int = Field(..., ge=0)
     
-
     category: Literal[
         'Lácteos', 
         'Snacks', 
@@ -24,10 +23,11 @@ class Product(BaseModel):
         'Otros'
     ] = Field(...)
     
-
+    status: Literal['to do', 'done'] = 'to do'
+    position: Optional[int] = 0
+    
     tags: List[str] = Field(default_factory=list)
     
-
     created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
     updated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
     
@@ -38,6 +38,8 @@ class Product(BaseModel):
                 "sku": "YG-FRS-150G",
                 "quantity": 120,
                 "category": "Lácteos",
+                "status": "to do",
+                "position": 0,
                 "tags": ["frio", "desayuno"]
             }
         }
@@ -45,3 +47,4 @@ class Product(BaseModel):
     def update_timestamp(self):
         """Actualiza el campo updated_at a la hora UTC actual."""
         self.updated_at = datetime.utcnow().isoformat()
+        
