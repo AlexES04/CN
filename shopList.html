@@ -13,7 +13,6 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            /* --- 🎨 CAMBIO ESTÉTICO: Nuevo fondo --- */
             background: #f4f8f7;
             color: #333;
             min-height: 100vh;
@@ -59,7 +58,6 @@
 
         .config-modal input:focus {
             outline: none;
-            /* --- 🎨 CAMBIO ESTÉTICO: Nuevo color de acento --- */
             border-color: #28a745;
         }
 
@@ -85,7 +83,6 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 30px;
-            /* --- 🎨 CAMBIO ESTÉTICO: Header más limpio --- */
             background: #ffffff;
             padding: 20px 30px;
             border-radius: 12px;
@@ -112,7 +109,6 @@
         }
 
         .btn-primary {
-            /* --- 🎨 CAMBIO ESTÉTICO: Nuevo color primario --- */
             background: #28a745;
             color: white;
         }
@@ -139,7 +135,6 @@
         }
 
         .column {
-            /* --- 🎨 CAMBIO ESTÉTICO: Columnas transparentes --- */
             background: transparent;
             border-radius: 0;
             padding: 10px;
@@ -153,7 +148,6 @@
             align-items: center;
             margin-bottom: 20px;
             padding-bottom: 10px;
-            /* --- 🎨 CAMBIO ESTÉTICO: Títulos de columna como cabeceros --- */
             border-bottom: 3px solid #004d40;
         }
 
@@ -164,7 +158,6 @@
         }
 
         .column-count {
-            /* --- 🎨 CAMBIO ESTÉTICO: Nuevo estilo de contador --- */
             background: #004d40;
             color: white;
             padding: 4px 12px;
@@ -182,7 +175,6 @@
 
         /* --- Tarjetas (Estilo actualizado) --- */
         .card {
-            /* --- 🎨 CAMBIO ESTÉTICO: Estilo de "item de lista" --- */
             background: white;
             border: none;
             border-radius: 8px;
@@ -225,7 +217,6 @@
             height: 18px;
             cursor: pointer;
             flex-shrink: 0;
-            /* --- 🎨 CAMBIO ESTÉTICO: Acento en checkbox --- */
             accent-color: #28a745;
         }
 
@@ -236,7 +227,6 @@
             margin-bottom: 0;
         }
 
-        /* --- 🌟 NUEVO CAMPO: Categoría --- */
         .card-category {
             font-size: 0.85rem;
             color: #666;
@@ -317,7 +307,6 @@
         .form-group textarea:focus,
         .form-group select:focus {
             outline: none;
-            /* --- 🎨 CAMBIO ESTÉTICO: Nuevo color de acento --- */
             border-color: #28a745;
             box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.2);
         }
@@ -388,28 +377,36 @@
         </div>
     </div>
 
-    <div id="ticketModal" class="modal">
+    <div id="productModal" class="modal">
         <div class="modal-content">
             <h2 id="modalTitle">Añadir Producto</h2>
-            <form id="ticketForm">
+            <form id="productForm">
                 <div class="form-group">
-                    <label>Producto *</label>
-                    <input type="text" id="ticketTitle" required>
+                    <label>Nombre *</label>
+                    <input type="text" id="productName" required>
                 </div>
 
                 <div class="form-group">
                     <label>Cantidad *</label>
-                    <input type="number" id="ticketQuantity" value="1" min="1" required>
+                    <input type="number" id="productQuantity" value="1" min="1" required>
                 </div>
                 
                 <div class="form-group">
                     <label>Categoría</label>
-                    <input type="text" id="ticketCategory" placeholder="Ej: Lácteos, Fruta, Limpieza...">
+                    <select id="productCategory">
+                        <option value="Lácteos">Lácteos</option>
+                        <option value="Snacks">Snacks</option>
+                        <option value="Bebidas">Bebidas</option>
+                        <option value="Frutas y Verduras">Frutas y Verduras</option>
+                        <option value="Carnicería">Carnicería</option>
+                        <option value="Limpieza">Limpieza</option>
+                        <option value="Otros">Otros</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
                     <label>Estado</label>
-                    <select id="ticketStatus">
+                    <select id="productStatus">
                         <option value="to do">Pendiente</option>
                         <option value="done">Comprado</option>
                     </select>
@@ -426,8 +423,8 @@
     <script>
         let API_URL = '';
         let API_KEY = '';
-        let currentTicketId = null;
-        let tickets = [];
+        let currentProductId = null; // 🌟 REFACTOR: ticket -> product
+        let products = []; // 🌟 REFACTOR: tickets -> products
 
         // Inicialización (sin cambios)
         window.onload = () => {
@@ -460,7 +457,7 @@
             document.getElementById('configOverlay').style.display = 'none';
             document.getElementById('app').style.display = 'block';
 
-            loadTickets();
+            loadProducts(); // 🌟 REFACTOR: loadTickets -> loadProducts
         }
 
         function logout() {
@@ -497,12 +494,13 @@
             return await response.json();
         }
 
-        async function loadTickets() {
+        // 🌟 REFACTOR: loadTickets -> loadProducts
+        async function loadProducts() {
             try {
                 showLoading(true);
                 hideError();
                 
-                tickets = await apiRequest('/items');
+                products = await apiRequest('/items');
                 renderBoard();
             } catch (error) {
                 showError(`Error al cargar productos: ${error.message}`);
@@ -511,7 +509,7 @@
             }
         }
 
-        // --- Renderizado del Board (sin cambios) ---
+        // --- Renderizado del Board ---
         function renderBoard() {
             const statuses = ['to do', 'done'];
             
@@ -521,81 +519,75 @@
                 
                 container.innerHTML = '';
                 
-                const statusTickets = tickets
-                    .filter(t => t.status === status)
-                    .sort((a, b) => (a.position || 0) - (b.position || 0));
+                // 🌟 REFACTOR: tickets -> products
+                const statusProducts = products
+                    .filter(p => p.status === status)
+                    .sort((a, b) => (a.position || 0) - (b.position || 0)); // Asumimos que el backend aún usa 'position'
 
-                statusTickets.forEach(ticket => {
-                    container.appendChild(createCard(ticket));
+                statusProducts.forEach(product => {
+                    container.appendChild(createCard(product));
                 });
 
-                document.getElementById(`count-${status}`).textContent = statusTickets.length;
+                document.getElementById(`count-${status}`).textContent = statusProducts.length;
             });
         }
 
         // --- 🌟 CREACIÓN DE TARJETA (ACTUALIZADO) ---
-        function createCard(ticket) {
+        function createCard(product) {
             const card = document.createElement('div');
             card.className = 'card';
             card.draggable = true;
-            card.dataset.ticketId = ticket.ticket_id;
-            card.dataset.status = ticket.status;
+            card.dataset.productId = product.product_id; // 🌟 REFACTOR
+            card.dataset.status = product.status;
             card.ondragstart = drag;
 
-            // 🌟 LEER DATOS EXTRA: Parsear la cantidad y categoría desde el campo 'description'
-            let quantity = 1;
-            let category = "Sin categoría";
-            try {
-                const data = JSON.parse(ticket.description || '{}');
-                quantity = data.qty || 1;
-                category = data.cat || "Sin categoría";
-            } catch (e) {
-                // Si 'description' no es un JSON, usar defaults
-            }
+            // 🌟 CAMBIO DE LÓGICA: Ya no se parsea 'description'
+            // Leemos los campos 'quantity' y 'category' directamente
+            const quantity = product.quantity || 1;
+            const category = product.category || "Sin categoría";
 
             const categoryHtml = `<div class="card-category">${category}</div>`;
-
-            const isChecked = ticket.status === 'done' ? 'checked' : '';
+            const isChecked = product.status === 'done' ? 'checked' : '';
 
             card.innerHTML = `
                 <div class="card-header">
-                    <input type="checkbox" ${isChecked} onchange="toggleDone('${ticket.ticket_id}')">
-                    <div class="card-title">${quantity} x ${ticket.title}</div>
+                    <input type="checkbox" ${isChecked} onchange="toggleDone('${product.product_id}')">
+                    <div class="card-title">${quantity} x ${product.name}</div>
                 </div>
                 ${categoryHtml}
                 <div class="card-actions">
-                    <button class="btn btn-secondary" onclick="editTicket('${ticket.ticket_id}')">✏️ Editar</button>
-                    <button class="btn btn-secondary" onclick="deleteTicket('${ticket.ticket_id}')">🗑️</button>
+                    <button class="btn btn-secondary" onclick="editProduct('${product.product_id}')">✏️ Editar</button>
+                    <button class="btn btn-secondary" onclick="deleteProduct('${product.product_id}')">🗑️</button>
                 </div>
             `;
 
             return card;
         }
 
-        // --- Checkbox (sin cambios en la lógica, pero ahora llama a updateTicketStatus) ---
-        async function toggleDone(ticketId) {
-            const ticket = tickets.find(t => t.ticket_id === ticketId);
-            if (!ticket) return;
+        // --- Checkbox (Lógica de API actualizada) ---
+        async function toggleDone(productId) { // 🌟 REFACTOR
+            const product = products.find(p => p.product_id === productId);
+            if (!product) return;
 
-            const newStatus = ticket.status === 'done' ? 'to do' : 'done';
+            const newStatus = product.status === 'done' ? 'to do' : 'done';
             
             try {
                 // Mover visualmente primero para respuesta rápida
-                const card = document.querySelector(`[data-ticket-id="${ticketId}"]`);
+                const card = document.querySelector(`[data-product-id="${productId}"]`); // 🌟 REFACTOR
                 if(card) {
                     document.querySelector(`.cards[data-status="${newStatus}"]`).appendChild(card);
                 }
 
-                await updateTicketStatus(ticketId, newStatus);
+                await updateProductStatus(productId, newStatus); // 🌟 REFACTOR
             } catch (error) {
                 showError(`Error al marcar producto: ${error.message}`);
                 renderBoard(); // Revertir si hay error
             }
         }
 
-        // --- Drag & Drop (sin cambios) ---
+        // --- Drag & Drop (Lógica de API actualizada) ---
         function drag(ev) {
-            ev.dataTransfer.setData('ticketId', ev.target.dataset.ticketId);
+            ev.dataTransfer.setData('productId', ev.target.dataset.productId); // 🌟 REFACTOR
             ev.target.classList.add('dragging');
         }
 
@@ -605,14 +597,14 @@
 
         async function drop(ev) {
             ev.preventDefault();
-            const ticketId = ev.dataTransfer.getData('ticketId');
+            const productId = ev.dataTransfer.getData('productId'); // 🌟 REFACTOR
             const newStatus = ev.currentTarget.dataset.status;
             
-            const ticket = tickets.find(t => t.ticket_id === ticketId);
+            const product = products.find(p => p.product_id === productId); // 🌟 REFACTOR
             
-            if (ticket && ticket.status !== newStatus) {
+            if (product && product.status !== newStatus) {
                 try {
-                    await updateTicketStatus(ticketId, newStatus);
+                    await updateProductStatus(productId, newStatus); // 🌟 REFACTOR
                 } catch (error) {
                     showError(`Error al mover producto: ${error.message}`);
                 }
@@ -621,120 +613,103 @@
         }
 
         // --- 🌟 ACTUALIZAR ESTADO (ACTUALIZADO) ---
-        // Esta función ahora solo necesita el ID y el nuevo estado.
-        // Reutiliza los datos existentes del producto para la llamada PUT.
-        async function updateTicketStatus(ticketId, newStatus) {
-            const ticket = tickets.find(t => t.ticket_id === ticketId);
+        async function updateProductStatus(productId, newStatus) { // 🌟 REFACTOR
+            const product = products.find(p => p.product_id === productId);
             
-            // Re-enviar todos los datos que el backend espera,
-            // cambiando solo el 'status'.
-            const updatedTicket = await apiRequest(`/items/${ticketId}`, 'PUT', {
-                title: ticket.title,
-                description: ticket.description, // Re-envía el JSON (qty, cat)
-                status: newStatus,
+            // 🌟 CAMBIO DE LÓGICA: Enviar el payload del NUEVO modelo 'Product'
+            const updatedProduct = await apiRequest(`/items/${productId}`, 'PUT', {
+                name: product.name,
+                quantity: product.quantity,
+                category: product.category,
+                status: newStatus, // El único campo que cambia
                 // Enviar el resto de campos que el backend pueda esperar
-                priority: ticket.priority || 'medium',
-                position: ticket.position || 0,
-                due_date: ticket.due_date || null,
-                tags: ticket.tags || []
+                position: product.position || 0,
+                tags: product.tags || []
+                // Ya no se envía 'description', 'priority', 'due_date'
             });
 
             // Actualizar la data local y re-renderizar
-            const index = tickets.findIndex(t => t.ticket_id === ticketId);
-            tickets[index] = updatedTicket;
+            const index = products.findIndex(p => p.product_id === productId); // 🌟 REFACTOR
+            products[index] = updatedProduct;
             renderBoard();
         }
 
         // --- 🌟 ABRIR MODAL CREAR (ACTUALIZADO) ---
         function openCreateModal() {
-            currentTicketId = null;
+            currentProductId = null; // 🌟 REFACTOR
             document.getElementById('modalTitle').textContent = 'Añadir Producto';
-            document.getElementById('ticketForm').reset();
+            document.getElementById('productForm').reset(); // 🌟 REFACTOR
             
             // Defaults para los nuevos campos
-            document.getElementById('ticketQuantity').value = 1;
-            document.getElementById('ticketCategory').value = "";
-            document.getElementById('ticketStatus').value = 'to do';
+            document.getElementById('productQuantity').value = 1;
+            document.getElementById('productCategory').value = "Lácteos"; // Default
+            document.getElementById('productStatus').value = 'to do';
 
-            document.getElementById('ticketModal').classList.add('active');
+            document.getElementById('productModal').classList.add('active'); // 🌟 REFACTOR
         }
 
         // --- 🌟 ABRIR MODAL EDITAR (ACTUALIZADO) ---
-        async function editTicket(ticketId) {
-            currentTicketId = ticketId;
-            const ticket = tickets.find(t => t.ticket_id === ticketId);
+        async function editProduct(productId) { // 🌟 REFACTOR
+            currentProductId = productId; // 🌟 REFACTOR
+            const product = products.find(p => p.product_id === productId); // 🌟 REFACTOR
 
             document.getElementById('modalTitle').textContent = 'Editar Producto';
 
-            // 🌟 LEER DATOS EXTRA: Parsear la cantidad y categoría desde 'description'
-            let quantity = 1;
-            let category = "";
-            try {
-                const data = JSON.parse(ticket.description || '{}');
-                quantity = data.qty || 1;
-                category = data.cat || "";
-            } catch (e) { }
+            // 🌟 CAMBIO DE LÓGICA: Rellenar formulario desde los campos correctos
+            document.getElementById('productName').value = product.name;
+            document.getElementById('productQuantity').value = product.quantity;
+            document.getElementById('productCategory').value = product.category;
+            document.getElementById('productStatus').value = product.status;
 
-            // Rellenar el formulario
-            document.getElementById('ticketTitle').value = ticket.title;
-            document.getElementById('ticketQuantity').value = quantity;
-            document.getElementById('ticketCategory').value = category;
-            document.getElementById('ticketStatus').value = ticket.status;
-
-            document.getElementById('ticketModal').classList.add('active');
+            document.getElementById('productModal').classList.add('active'); // 🌟 REFACTOR
         }
 
         function closeModal() {
-            document.getElementById('ticketModal').classList.remove('active');
-            currentTicketId = null;
+            document.getElementById('productModal').classList.remove('active'); // 🌟 REFACTOR
+            currentProductId = null; // 🌟 REFACTOR
         }
 
         // --- 🌟 ENVÍO DE FORMULARIO (ACTUALIZADO) ---
-        document.getElementById('ticketForm').onsubmit = async (e) => {
+        document.getElementById('productForm').onsubmit = async (e) => { // 🌟 REFACTOR
             e.preventDefault();
 
             // 1. Obtener valores del formulario
-            const title = document.getElementById('ticketTitle').value;
-            const status = document.getElementById('ticketStatus').value;
-            const quantity = parseInt(document.getElementById('ticketQuantity').value, 10);
-            const category = document.getElementById('ticketCategory').value;
+            const name = document.getElementById('productName').value;
+            const status = document.getElementById('productStatus').value;
+            const quantity = parseInt(document.getElementById('productQuantity').value, 10);
+            const category = document.getElementById('productCategory').value;
 
-            // 2. 🌟 Validación de Cantidad
+            // 2. Validación
             if (!quantity || quantity < 1) {
                 alert('La cantidad debe ser 1 o más.');
                 return;
             }
 
-            // 3. 🌟 Crear el JSON para 'description'
-            const descriptionData = { qty: quantity, cat: category };
-            const description = JSON.stringify(descriptionData);
-
-            // 4. Preparar el 'payload' completo para el backend
-            // (Reutiliza datos antiguos si estamos editando, para campos no visibles)
-            const originalTicket = currentTicketId ? tickets.find(t => t.ticket_id === currentTicketId) : null;
+            // 3. 🌟 CAMBIO DE LÓGICA: Preparar el 'payload' limpio
+            const originalProduct = currentProductId ? products.find(p => p.product_id === currentProductId) : null;
 
             const data = {
-                title: title,
-                description: description, // Aquí va nuestro JSON
+                name: name,
+                quantity: quantity,
+                category: category,
                 status: status,
-                // Mantener los campos que el backend espera pero que no usamos
-                priority: originalTicket ? originalTicket.priority : 'medium',
-                due_date: originalTicket ? originalTicket.due_date : null,
-                tags: originalTicket ? originalTicket.tags : [],
-                position: originalTicket ? originalTicket.position : 0
+                // Mantener los campos que el backend espera
+                position: originalProduct ? originalProduct.position : 0,
+                tags: originalProduct ? originalProduct.tags : []
+                // Ya no se envía 'description'
             };
 
-            // 5. Enviar a la API
+            // 4. Enviar a la API
             try {
-                if (currentTicketId) {
+                if (currentProductId) {
                     // Actualizar (PUT)
-                    const updated = await apiRequest(`/items/${currentTicketId}`, 'PUT', data);
-                    const index = tickets.findIndex(t => t.ticket_id === currentTicketId);
-                    tickets[index] = updated;
+                    const updated = await apiRequest(`/items/${currentProductId}`, 'PUT', data);
+                    const index = products.findIndex(p => p.product_id === currentProductId);
+                    products[index] = updated;
                 } else {
                     // Crear (POST)
                     const created = await apiRequest('/items', 'POST', data);
-                    tickets.push(created);
+                    products.push(created);
                 }
 
                 renderBoard();
@@ -744,14 +719,14 @@
             }
         };
 
-        // --- Eliminar (sin cambios) ---
-        async function deleteTicket(ticketId) {
+        // --- Eliminar (Refactorizado) ---
+        async function deleteProduct(productId) { // 🌟 REFACTOR
             if (!confirm('¿Estás seguro de eliminar este producto?')) {
                 return;
             }
             try {
-                await apiRequest(`/items/${ticketId}`, 'DELETE');
-                tickets = tickets.filter(t => t.ticket_id !== ticketId);
+                await apiRequest(`/items/${productId}`, 'DELETE');
+                products = products.filter(p => p.product_id !== productId); // 🌟 REFACTOR
                 renderBoard();
             } catch (error) {
                 showError(`Error al eliminar producto: ${error.message}`);
@@ -759,7 +734,7 @@
         }
 
         function refreshBoard() {
-            loadTickets();
+            loadProducts(); // 🌟 REFACTOR
         }
 
         // --- Utilidades de UI (sin cambios) ---
@@ -776,8 +751,9 @@
             document.getElementById('errorContainer').innerHTML = '';
         }
 
-        document.getElementById('ticketModal').onclick = (e) => {
-            if (e.target.id === 'ticketModal') {
+        // 🌟 REFACTOR: Apuntar al ID del modal correcto
+        document.getElementById('productModal').onclick = (e) => {
+            if (e.target.id === 'productModal') {
                 closeModal();
             }
         };
