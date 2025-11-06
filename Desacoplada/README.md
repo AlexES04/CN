@@ -1,8 +1,3 @@
-# Computación en la nube
-This is a repository for the subject "Cloud Computing", at Universidad de Las Palmas de Gran Canaria (ULPGC). 
-
-
----
 # Práctica 4 - Modelo acoplado
 
 **Autor:** Alejandro de Olózaga Ramírez

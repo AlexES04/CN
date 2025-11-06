@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "DynamoDB Table mínima para productos de la compra"
+
+Parameters:
+  TableName:
+    Type: String
+    Default: products
+    Description: DynamoDB table Name
+
+Resources:
+  ProductsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref TableName
+      AttributeDefinitions:
+        - AttributeName: product_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: product_id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+Outputs:
+  TableName:
+    Description: DynamoDB table name
+    Value: !Ref ProductsTable
+
+  TableArn:
+    Description: ARN DynamoDB table
+    Value: !GetAtt ProductsTable.Arn

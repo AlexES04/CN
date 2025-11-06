@@ -1,16 +1,13 @@
-# Computación en la nube
-This is a repository for the subject "Cloud Computing", at Universidad de Las Palmas de Gran Canaria (ULPGC). 
-
-
----
-# Práctica 4 - Modelo acoplado
+# Práctica 4 - Modelo monolito (acoplado)
 
 **Autor:** Alejandro de Olózaga Ramírez
 
 **Fecha:** Noviembre del 2025
 
 ## Introducción
-Este es el modelo acoplado de la primera práctica entregable de la asignatura de Computación en la Nube, de la Universidad de Las Palmas de Gran Canaria. El diagrama de la infraestructura se presenta en la siguiente imagen
+Esta es la primera parte de la práctica de la asignatura de Computación en la Nube, de la Universidad de Las Palmas de Gran Canaria. Consiste en desplegar una aplicación web en AWS usando los recursos disponibles partiendo de una base con ficheros ``.yml`` con un diseño monolito o acoplado. En este caso, se usa un servicio ECS. El diagrama de la infraestructura se presenta en la siguiente imagen:
+
+![Diagrama de infraestructura monolito](diagramaMonolito.png "Diagrama monolito")
 
 
 La aplicación web que se despliega simula una lista de la compra donde se pueden añadir, editar, visualziar y eliminar elementos, con una categoría y una cantidad especificadas. Básciamente, se permiten las operaciones CRUD.
@@ -140,3 +137,5 @@ Por último, el despliegue para que la API sea accesible. ``APIDeployment`` repr
 En esta sección se exponen los valores imporantes de los recursos creados, que se podrán ver en la consola después de que el Stack se haya completado.
 
 Primeramente, el Endpoint de la API, que es la salica que porporciona la URL completa y funcional para interactuar con la API REST. El ID de la API Key proporciona el identificador único de la clave que se acaba de crear para autenticar solicitudes.
+
+## Pricing
