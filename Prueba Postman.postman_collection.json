@@ -1,0 +1,156 @@
+{
+	"info": {
+		"_postman_id": "6740a8f4-3d90-41af-8616-b0e77cb9dcb8",
+		"name": "Prueba Postman",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "49872729",
+		"_collection_link": "https://alexes04-4924132.postman.co/workspace/Alejandro-de-Ol%C3%B3zaga's-Workspac~775723f4-1e7c-4bfe-8a73-5ad193aa268d/collection/49872729-6740a8f4-3d90-41af-8616-b0e77cb9dcb8?action=share&source=collection_link&creator=49872729"
+	},
+	"item": [
+		{
+			"name": "Post item",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"name\": \"Yogur Griego Fresa\",\r\n  \"sku\": \"YG-FRS-150G\",\r\n  \"quantity\": 120,\r\n  \"category\": \"Lácteos\",\r\n  \"status\": \"to do\",\r\n  \"position\": 0,\r\n  \"tags\": [\r\n    \"frio\",\r\n    \"desayuno\"\r\n  ]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/items",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"items"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get all items",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseURL}}/items",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"items"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get item",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseURL}}/items/f58f57ef-cf6a-4426-818d-e7821a59ceee",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"items",
+						"f58f57ef-cf6a-4426-818d-e7821a59ceee"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "delete item",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{baseURL}}/items/12fea1e5-00b7-4459-b6e0-ccb5e8819689",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"items",
+						"12fea1e5-00b7-4459-b6e0-ccb5e8819689"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "uptdate item",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"category\": \"Carnicería\",\r\n    \"created_at\": \"2025-11-06T21:56:49.936996\",\r\n    \"name\": \"Tortitas 2.0\",\r\n    \"position\": 0,\r\n    \"product_id\": \"f58f57ef-cf6a-4426-818d-e7821a59ceee\",\r\n    \"quantity\": 15,\r\n    \"sku\": null,\r\n    \"status\": \"done\",\r\n    \"tags\": [],\r\n    \"updated_at\": \"2025-11-06T21:56:49.937013\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/items/f58f57ef-cf6a-4426-818d-e7821a59ceee",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"items",
+						"f58f57ef-cf6a-4426-818d-e7821a59ceee"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "apikey",
+		"apikey": [
+			{
+				"key": "key",
+				"value": "x-api-key",
+				"type": "string"
+			},
+			{
+				"key": "value",
+				"value": "{{APIKey}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}
