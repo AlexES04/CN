@@ -18,4 +18,4 @@ COPY models/ /var/task/models
 COPY lambdas/deleteItem/deleteHandler.py .
 
 # El CMD apunta al fichero que acabamos de copiar
-CMD [ "delete_item_handler.handler" ]
+CMD [ "deleteHandler.handler" ]

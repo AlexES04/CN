@@ -18,4 +18,4 @@ COPY models/ /var/task/models
 COPY lambdas/putItem/putHandler.py .
 
 # El CMD apunta al fichero que acabamos de copiar
-CMD [ "put_item_handler.handler" ]
+CMD [ "putHandler.handler" ]

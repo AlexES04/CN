@@ -18,4 +18,4 @@ COPY models/ /var/task/models
 COPY lambdas/getItem/getHandler.py .
 
 # El CMD apunta al fichero que acabamos de copiar
-CMD [ "get_item_handler.handler" ]
+CMD [ "getHandler.handler" ]

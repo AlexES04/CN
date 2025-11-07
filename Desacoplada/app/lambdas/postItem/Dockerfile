@@ -18,4 +18,4 @@ COPY models/ /var/task/models
 COPY lambdas/postItem/postHandler.py .
 
 # El CMD apunta al fichero que acabamos de copiar
-CMD [ "post_item_handler.handler" ]
+CMD [ "postHandler.handler" ]
