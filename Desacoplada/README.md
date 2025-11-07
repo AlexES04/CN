@@ -5,6 +5,10 @@
 **Fecha:** Noviembre del 2025
 
 ## Introducción
+
+![Diagrama de infraestructura desacoplada](../resources/diagramaDesacoplada.png "Diagrama desacoplada")
+
+
 Este es el modelo acoplado de la primera práctica entregable de la asignatura de Computación en la Nube, de la Universidad de Las Palmas de Gran Canaria. El diagrama de la infraestructura se presenta en la siguiente imagen
 
 
