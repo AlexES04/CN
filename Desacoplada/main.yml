@@ -2,10 +2,15 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: "ECS Fargate + API Gateway REST API with API Key"
 
 Parameters:
-  ImageName:
+  EcrRepositoryName:
     Type: String
-    Description: ECR Image Name
-    Default: products-app:latest
+    Description: ECR image name
+    Default: products-app-lambdas
+
+  IamRoleARN:
+    Type: String
+    Description: "Existing IAM role ARN"
+    Default: "arn:aws:iam::339713111309:role/LabRole"
 
   VpcId:
     Type: AWS::EC2::VPC::Id
@@ -24,16 +29,11 @@ Parameters:
 # NETWORKING RESOURCES
 # ============================================================================
 Resources:
-  ECSSecurityGroup:
+  LambdaSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Security group for ECS tasks
+      GroupDescription: Security group for Lambda functions
       VpcId: !Ref VpcId
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 8080
-          ToPort: 8080
-          CidrIp: 172.31.0.0/16
 
   EndpointSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -44,7 +44,136 @@ Resources:
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
-          SourceSecurityGroupId: !Ref ECSSecurityGroup
+          SourceSecurityGroupId: !Ref LambdaSecurityGroup
+
+  PostInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PostItemLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/*/*"
+    
+  GetInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref GetItemLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/*/*"
+
+    GetAllInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref GetItemsLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/*/*"
+
+  PutInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PutItemLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/*/*"
+      
+  DeleteInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref DeleteItemLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/*/*"
+
+# ============================================================================
+# LAMBDA FUNCTIONS
+# ============================================================================
+
+  PostItemLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: post-item-lambda
+      PackageType: Image
+      Code:
+        ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrRepositoryName}:post-item"
+      Role: !Ref IamRoleARN
+      Timeout: 30
+      MemorySize: 512
+      VpcConfig:
+        SecurityGroupIds: [!Ref LambdaSecurityGroup]
+        SubnetIds: !Ref SubnetIds
+      Environment:
+        Variables:
+          DB_DYNAMONAME: !Ref DBDynamoName
+
+  GetItemsLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: get-items-lambda
+      PackageType: Image
+      Code:
+        ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrRepositoryName}:get-items"
+      Role: !Ref IamRoleARN
+      Timeout: 30
+      MemorySize: 512
+      VpcConfig:
+        SecurityGroupIds: [!Ref LambdaSecurityGroup]
+        SubnetIds: !Ref SubnetIds
+      Environment:
+        Variables:
+          DB_DYNAMONAME: !Ref DBDynamoName
+
+  GetItemLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: get-item-lambda
+      PackageType: Image
+      Code:
+        ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrRepositoryName}:get-item"
+      Role: !Ref IamRoleARN
+      Timeout: 30
+      MemorySize: 512
+      VpcConfig:
+        SecurityGroupIds: [!Ref LambdaSecurityGroup]
+        SubnetIds: !Ref SubnetIds
+      Environment:
+        Variables:
+          DB_DYNAMONAME: !Ref DBDynamoName
+
+  PutItemLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: put-item-lambda
+      PackageType: Image
+      Code:
+        ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrRepositoryName}:put-item"
+      Role: !Ref IamRoleARN
+      Timeout: 30
+      MemorySize: 512
+      VpcConfig:
+        SecurityGroupIds: [!Ref LambdaSecurityGroup]
+        SubnetIds: !Ref SubnetIds
+      Environment:
+        Variables:
+          DB_DYNAMONAME: !Ref DBDynamoName
+
+  DeleteItemLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: delete-item-lambda
+      PackageType: Image
+      Code:
+        ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrRepositoryName}:delete-item"
+      Role: !Ref IamRoleARN
+      Timeout: 30
+      MemorySize: 512
+      VpcConfig:
+        SecurityGroupIds: [!Ref LambdaSecurityGroup]
+        SubnetIds: !Ref SubnetIds
+      Environment:
+        Variables:
+          DB_DYNAMONAME: !Ref DBDynamoName
 
 # ============================================================================
   # VPC ENDPOINTS (Para acceso privado a ECR)
@@ -102,104 +231,9 @@ Resources:
         - "rtb-08285e40991dbb396"
   
   # ============================================================================
-  # LOAD BALANCER RESOURCES
-  # ============================================================================
-  NLB:
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    Properties:
-      Name: products-nlb
-      Type: network
-      Scheme: internal
-      Subnets: !Ref SubnetIds
-
-  TargetGroup:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      Name: products-tg
-      Port: 8080
-      Protocol: TCP
-      VpcId: !Ref VpcId
-      TargetType: ip
-      HealthCheckProtocol: HTTP
-      HealthCheckPath: /health
-
-  Listener:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn: !Ref TargetGroup
-      LoadBalancerArn: !Ref NLB
-      Port: 8080
-      Protocol: TCP
-
-  # ============================================================================
-  # ECS RESOURCES
-  # ============================================================================
-  ECSCluster:
-    Type: AWS::ECS::Cluster
-    Properties:
-      ClusterName: products-cluster
-
-  TaskDefinition:
-    Type: AWS::ECS::TaskDefinition
-    Properties:
-      Family: products-task
-      NetworkMode: awsvpc
-      RequiresCompatibilities:
-        - FARGATE
-      Cpu: 256
-      Memory: 512
-      ExecutionRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/LabRole"
-      TaskRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/LabRole"
-      ContainerDefinitions:
-        - Name: products-container
-          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ImageName}"
-          PortMappings:
-            - ContainerPort: 8080
-              Protocol: tcp
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group: /ecs/products
-              awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: products
-              awslogs-create-group: "true"
-          Environment:
-            - Name: DB_DYNAMONAME
-              Value: !Ref DBDynamoName
-
-  ECSService:
-    Type: AWS::ECS::Service
-    DependsOn:
-      - Listener
-    Properties:
-      Cluster: !Ref ECSCluster
-      ServiceName: products-service
-      TaskDefinition: !Ref TaskDefinition
-      DesiredCount: 1
-      LaunchType: FARGATE
-      NetworkConfiguration:
-        AwsvpcConfiguration:
-          AssignPublicIp: DISABLED
-          Subnets: !Ref SubnetIds
-          SecurityGroups:
-            - !Ref ECSSecurityGroup
-      LoadBalancers:
-        - ContainerName: products-container
-          ContainerPort: 8080
-          TargetGroupArn: !Ref TargetGroup
-
-  # ============================================================================
   # API GATEWAY RESOURCES
   # ============================================================================
-  VPCLink:
-    Type: AWS::ApiGateway::VpcLink
-    Properties:
-      Name: products-vpc-link
-      TargetArns:
-        - !Ref NLB
-
+  
   RestAPI:
     Type: AWS::ApiGateway::RestApi
     Properties:
@@ -229,11 +263,9 @@ Resources:
       AuthorizationType: NONE
       ApiKeyRequired: true
       Integration:
-        Type: HTTP_PROXY
+        Type: AWS_PROXY
         IntegrationHttpMethod: POST
-        Uri: !Sub "http://${NLB.DNSName}:8080/items"
-        ConnectionType: VPC_LINK
-        ConnectionId: !Ref VPCLink
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PostItemLambda.Arn}/invocations"
 
   GetItemsMethod:
     Type: AWS::ApiGateway::Method
@@ -244,11 +276,9 @@ Resources:
       AuthorizationType: NONE
       ApiKeyRequired: true
       Integration:
-        Type: HTTP_PROXY
-        IntegrationHttpMethod: GET
-        Uri: !Sub "http://${NLB.DNSName}:8080/items"
-        ConnectionType: VPC_LINK
-        ConnectionId: !Ref VPCLink
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetItemsLambda.Arn}/invocations"
 
   GetItemMethod:
     Type: AWS::ApiGateway::Method
@@ -258,16 +288,12 @@ Resources:
       HttpMethod: GET
       AuthorizationType: NONE
       ApiKeyRequired: true
-      RequestParameters:
+      RequestParameters: # Mantenemos esto para validación
         method.request.path.id: true
       Integration:
-        Type: HTTP_PROXY
-        IntegrationHttpMethod: GET
-        Uri: !Sub "http://${NLB.DNSName}:8080/items/{id}"
-        ConnectionType: VPC_LINK
-        ConnectionId: !Ref VPCLink
-        RequestParameters:
-          integration.request.path.id: method.request.path.id
+        Type: AWS_PROXY # Integración de Lambda
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetItemLambda.Arn}/invocations"
 
   PutItemMethod:
     Type: AWS::ApiGateway::Method
@@ -277,16 +303,12 @@ Resources:
       HttpMethod: PUT
       AuthorizationType: NONE
       ApiKeyRequired: true
-      RequestParameters:
+      RequestParameters: # Mantenemos esto para validación
         method.request.path.id: true
       Integration:
-        Type: HTTP_PROXY
-        IntegrationHttpMethod: PUT
-        Uri: !Sub "http://${NLB.DNSName}:8080/items/{id}"
-        ConnectionType: VPC_LINK
-        ConnectionId: !Ref VPCLink
-        RequestParameters:
-          integration.request.path.id: method.request.path.id
+        Type: AWS_PROXY # Integración de Lambda
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PutItemLambda.Arn}/invocations"
 
   DeleteItemMethod:
     Type: AWS::ApiGateway::Method
@@ -296,17 +318,15 @@ Resources:
       HttpMethod: DELETE
       AuthorizationType: NONE
       ApiKeyRequired: true
-      RequestParameters:
+      RequestParameters: # Mantenemos esto para validación
         method.request.path.id: true
       Integration:
-        Type: HTTP_PROXY
-        IntegrationHttpMethod: DELETE
-        Uri: !Sub "http://${NLB.DNSName}:8080/items/{id}"
-        ConnectionType: VPC_LINK
-        ConnectionId: !Ref VPCLink
-        RequestParameters:
-          integration.request.path.id: method.request.path.id
+        Type: AWS_PROXY # Integración de Lambda
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteItemLambda.Arn}/invocations"
 
+  # --- Métodos OPTIONS para CORS (se quedan igual) ---
+  
   OptionsItemsMethod:
     Type: AWS::ApiGateway::Method
     Properties:
@@ -360,6 +380,48 @@ Resources:
             method.response.header.Access-Control-Allow-Headers: true
             method.response.header.Access-Control-Allow-Methods: true
             method.response.header.Access-Control-Allow-Origin: true
+
+  # --- Permisos para que API Gateway invoque las Lambdas ---
+
+  PostItemsPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt PostItemLambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/POST/items"
+
+  GetItemsPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt GetItemsLambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/GET/items"
+
+  GetItemPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt GetItemLambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/GET/items/{id}"
+
+  PutItemPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt PutItemLambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/PUT/items/{id}"
+
+  DeleteItemPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt DeleteItemLambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/DELETE/items/{id}"
 
   APIDeployment:
     Type: AWS::ApiGateway::Deployment

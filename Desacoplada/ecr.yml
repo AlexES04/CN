@@ -4,7 +4,7 @@ Description: "Products ECR Repository"
 Parameters:
   RepositoryName:
     Type: String
-    Default: products-app
+    Default: products-app-lambdas
     Description: ECR repository name
 
 Resources:
@@ -20,11 +20,11 @@ Resources:
             "rules": [
               {
                 "rulePriority": 1,
-                "description": "Mantain only last 2 images",
+                "description": "Mantain only last 5 images",
                 "selection": {
                   "tagStatus": "any",
                   "countType": "imageCountMoreThan",
-                  "countNumber": 2
+                  "countNumber": 5
                 },
                 "action": {
                   "type": "expire"
