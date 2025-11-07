@@ -423,10 +423,9 @@
     <script>
         let API_URL = '';
         let API_KEY = '';
-        let currentProductId = null; // 🌟 REFACTOR: ticket -> product
-        let products = []; // 🌟 REFACTOR: tickets -> products
+        let currentProductId = null;
+        let products = [];
 
-        // Inicialización (sin cambios)
         window.onload = () => {
             const savedUrl = localStorage.getItem('apiUrl');
             const savedKey = localStorage.getItem('apiKey');
@@ -438,7 +437,6 @@
             }
         };
 
-        // Lógica de Configuración y API (sin cambios)
         function saveConfig() {
             const url = document.getElementById('apiUrl').value.trim();
             const key = document.getElementById('apiKey').value.trim();
@@ -457,7 +455,7 @@
             document.getElementById('configOverlay').style.display = 'none';
             document.getElementById('app').style.display = 'block';
 
-            loadProducts(); // 🌟 REFACTOR: loadTickets -> loadProducts
+            loadProducts();
         }
 
         function logout() {
@@ -494,7 +492,6 @@
             return await response.json();
         }
 
-        // 🌟 REFACTOR: loadTickets -> loadProducts
         async function loadProducts() {
             try {
                 showLoading(true);
@@ -509,7 +506,6 @@
             }
         }
 
-        // --- Renderizado del Board ---
         function renderBoard() {
             const statuses = ['to do', 'done'];
             
@@ -519,10 +515,9 @@
                 
                 container.innerHTML = '';
                 
-                // 🌟 REFACTOR: tickets -> products
                 const statusProducts = products
                     .filter(p => p.status === status)
-                    .sort((a, b) => (a.position || 0) - (b.position || 0)); // Asumimos que el backend aún usa 'position'
+                    .sort((a, b) => (a.position || 0) - (b.position || 0));
 
                 statusProducts.forEach(product => {
                     container.appendChild(createCard(product));
@@ -532,7 +527,6 @@
             });
         }
 
-        // --- 🌟 CREACIÓN DE TARJETA (ACTUALIZADO) ---
         function createCard(product) {
             const card = document.createElement('div');
             card.className = 'card';
@@ -541,8 +535,6 @@
             card.dataset.status = product.status;
             card.ondragstart = drag;
 
-            // 🌟 CAMBIO DE LÓGICA: Ya no se parsea 'description'
-            // Leemos los campos 'quantity' y 'category' directamente
             const quantity = product.quantity || 1;
             const category = product.category || "Sin categoría";
 
@@ -564,30 +556,27 @@
             return card;
         }
 
-        // --- Checkbox (Lógica de API actualizada) ---
-        async function toggleDone(productId) { // 🌟 REFACTOR
+        async function toggleDone(productId) {
             const product = products.find(p => p.product_id === productId);
             if (!product) return;
 
             const newStatus = product.status === 'done' ? 'to do' : 'done';
             
             try {
-                // Mover visualmente primero para respuesta rápida
-                const card = document.querySelector(`[data-product-id="${productId}"]`); // 🌟 REFACTOR
+                const card = document.querySelector(`[data-product-id="${productId}"]`);
                 if(card) {
                     document.querySelector(`.cards[data-status="${newStatus}"]`).appendChild(card);
                 }
 
-                await updateProductStatus(productId, newStatus); // 🌟 REFACTOR
+                await updateProductStatus(productId, newStatus);
             } catch (error) {
                 showError(`Error al marcar producto: ${error.message}`);
-                renderBoard(); // Revertir si hay error
+                renderBoard();
             }
         }
 
-        // --- Drag & Drop (Lógica de API actualizada) ---
         function drag(ev) {
-            ev.dataTransfer.setData('productId', ev.target.dataset.productId); // 🌟 REFACTOR
+            ev.dataTransfer.setData('productId', ev.target.dataset.productId);
             ev.target.classList.add('dragging');
         }
 
@@ -597,14 +586,14 @@
 
         async function drop(ev) {
             ev.preventDefault();
-            const productId = ev.dataTransfer.getData('productId'); // 🌟 REFACTOR
+            const productId = ev.dataTransfer.getData('productId');
             const newStatus = ev.currentTarget.dataset.status;
             
-            const product = products.find(p => p.product_id === productId); // 🌟 REFACTOR
+            const product = products.find(p => p.product_id === productId);
             
             if (product && product.status !== newStatus) {
                 try {
-                    await updateProductStatus(productId, newStatus); // 🌟 REFACTOR
+                    await updateProductStatus(productId, newStatus);
                 } catch (error) {
                     showError(`Error al mover producto: ${error.message}`);
                 }
@@ -612,80 +601,67 @@
             document.querySelector('.dragging')?.classList.remove('dragging');
         }
 
-        // --- 🌟 ACTUALIZAR ESTADO (ACTUALIZADO) ---
-        async function updateProductStatus(productId, newStatus) { // 🌟 REFACTOR
+        async function updateProductStatus(productId, newStatus) {
             const product = products.find(p => p.product_id === productId);
             
-            // 🌟 CAMBIO DE LÓGICA: Enviar el payload del NUEVO modelo 'Product'
             const updatedProduct = await apiRequest(`/items/${productId}`, 'PUT', {
                 name: product.name,
                 quantity: product.quantity,
                 category: product.category,
-                status: newStatus, // El único campo que cambia
-                // Enviar el resto de campos que el backend pueda esperar
+                status: newStatus,
                 position: product.position || 0,
                 tags: product.tags || []
-                // Ya no se envía 'description', 'priority', 'due_date'
             });
 
-            // Actualizar la data local y re-renderizar
-            const index = products.findIndex(p => p.product_id === productId); // 🌟 REFACTOR
+            const index = products.findIndex(p => p.product_id === productId);
             products[index] = updatedProduct;
             renderBoard();
         }
 
-        // --- 🌟 ABRIR MODAL CREAR (ACTUALIZADO) ---
         function openCreateModal() {
-            currentProductId = null; // 🌟 REFACTOR
+            currentProductId = null;
             document.getElementById('modalTitle').textContent = 'Añadir Producto';
-            document.getElementById('productForm').reset(); // 🌟 REFACTOR
+            document.getElementById('productForm').reset();
             
-            // Defaults para los nuevos campos
             document.getElementById('productQuantity').value = 1;
-            document.getElementById('productCategory').value = "Lácteos"; // Default
+            document.getElementById('productCategory').value = "Lácteos";
             document.getElementById('productStatus').value = 'to do';
 
-            document.getElementById('productModal').classList.add('active'); // 🌟 REFACTOR
+            document.getElementById('productModal').classList.add('active');
         }
 
-        // --- 🌟 ABRIR MODAL EDITAR (ACTUALIZADO) ---
-        async function editProduct(productId) { // 🌟 REFACTOR
-            currentProductId = productId; // 🌟 REFACTOR
-            const product = products.find(p => p.product_id === productId); // 🌟 REFACTOR
+        async function editProduct(productId) {
+            currentProductId = productId;
+            const product = products.find(p => p.product_id === productId);
 
             document.getElementById('modalTitle').textContent = 'Editar Producto';
 
-            // 🌟 CAMBIO DE LÓGICA: Rellenar formulario desde los campos correctos
             document.getElementById('productName').value = product.name;
             document.getElementById('productQuantity').value = product.quantity;
             document.getElementById('productCategory').value = product.category;
             document.getElementById('productStatus').value = product.status;
 
-            document.getElementById('productModal').classList.add('active'); // 🌟 REFACTOR
+            document.getElementById('productModal').classList.add('active');
         }
 
         function closeModal() {
-            document.getElementById('productModal').classList.remove('active'); // 🌟 REFACTOR
-            currentProductId = null; // 🌟 REFACTOR
+            document.getElementById('productModal').classList.remove('active');
+            currentProductId = null;
         }
 
-        // --- 🌟 ENVÍO DE FORMULARIO (ACTUALIZADO) ---
-        document.getElementById('productForm').onsubmit = async (e) => { // 🌟 REFACTOR
+        document.getElementById('productForm').onsubmit = async (e) => {
             e.preventDefault();
 
-            // 1. Obtener valores del formulario
             const name = document.getElementById('productName').value;
             const status = document.getElementById('productStatus').value;
             const quantity = parseInt(document.getElementById('productQuantity').value, 10);
             const category = document.getElementById('productCategory').value;
 
-            // 2. Validación
             if (!quantity || quantity < 1) {
                 alert('La cantidad debe ser 1 o más.');
                 return;
             }
 
-            // 3. 🌟 CAMBIO DE LÓGICA: Preparar el 'payload' limpio
             const originalProduct = currentProductId ? products.find(p => p.product_id === currentProductId) : null;
 
             const data = {
@@ -693,21 +669,16 @@
                 quantity: quantity,
                 category: category,
                 status: status,
-                // Mantener los campos que el backend espera
                 position: originalProduct ? originalProduct.position : 0,
                 tags: originalProduct ? originalProduct.tags : []
-                // Ya no se envía 'description'
             };
 
-            // 4. Enviar a la API
             try {
                 if (currentProductId) {
-                    // Actualizar (PUT)
                     const updated = await apiRequest(`/items/${currentProductId}`, 'PUT', data);
                     const index = products.findIndex(p => p.product_id === currentProductId);
                     products[index] = updated;
                 } else {
-                    // Crear (POST)
                     const created = await apiRequest('/items', 'POST', data);
                     products.push(created);
                 }
@@ -719,14 +690,13 @@
             }
         };
 
-        // --- Eliminar (Refactorizado) ---
-        async function deleteProduct(productId) { // 🌟 REFACTOR
+        async function deleteProduct(productId) {
             if (!confirm('¿Estás seguro de eliminar este producto?')) {
                 return;
             }
             try {
                 await apiRequest(`/items/${productId}`, 'DELETE');
-                products = products.filter(p => p.product_id !== productId); // 🌟 REFACTOR
+                products = products.filter(p => p.product_id !== productId);
                 renderBoard();
             } catch (error) {
                 showError(`Error al eliminar producto: ${error.message}`);
@@ -734,10 +704,9 @@
         }
 
         function refreshBoard() {
-            loadProducts(); // 🌟 REFACTOR
+            loadProducts();
         }
 
-        // --- Utilidades de UI (sin cambios) ---
         function showLoading(show) {
             document.getElementById('loading').style.display = show ? 'block' : 'none';
         }
@@ -751,7 +720,6 @@
             document.getElementById('errorContainer').innerHTML = '';
         }
 
-        // 🌟 REFACTOR: Apuntar al ID del modal correcto
         document.getElementById('productModal').onclick = (e) => {
             if (e.target.id === 'productModal') {
                 closeModal();

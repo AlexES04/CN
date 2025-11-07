@@ -1,17 +1,12 @@
 import logging
 from botocore.exceptions import ClientError
-from common import db, _format_response, logger # Importamos desde common
+from common import db, _format_response, logger
 
 def handler(event, context):
-    """
-    Handler para DELETE /items/{id}
-    (Corresponde a tu DeleteItemLambda)
-    """
     try:
         product_id = event['pathParameters']['id']
         
         if db.delete_product(product_id):
-            # 204 No Content. El body debe estar vacío.
             return _format_response(None, 204)
         else:
             return _format_response({'error': 'Item no encontrado'}, 404)

@@ -1,14 +1,9 @@
 import logging
 from botocore.exceptions import ClientError
-from common import db, _format_response, logger # Importamos desde common
+from common import db, _format_response, logger
 
 def handler(event, context):
-    """
-    Handler para GET /items/{id}
-    (Corresponde a tu GetItemLambda)
-    """
     try:
-        # Los parámetros de ruta vienen en 'pathParameters'
         product_id = event['pathParameters']['id']
         
         product = db.get_product(product_id)

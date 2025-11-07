@@ -1,15 +1,10 @@
 import logging
 from botocore.exceptions import ClientError
-from common import db, _format_response, logger # Importamos desde common
+from common import db, _format_response, logger
 
 def handler(event, context):
-    """
-    Handler para GET /items
-    (Corresponde a tu GetItemsLambda)
-    """
     try:
         products = db.get_all_products()
-        # Preparamos el cuerpo de la respuesta antes de pasarlo al helper
         body = [p.model_dump() for p in products]
         
         return _format_response(body, 200)

@@ -13,8 +13,6 @@ except ValueError as e:
     logger.error(f"Error fatal inicializando la BBDD: {e}")
     raise RuntimeError(f"Error inicializando DB: {e}") from e
 
-# --- Función de Ayuda para Respuestas ---
-
 def _format_response(body, status_code=200):
     """
     Formatea la respuesta en el formato que AWS API Gateway Proxy espera.

@@ -6,10 +6,6 @@ from models.product import Product
 from common import db, _format_response, logger
 
 def handler(event, context):
-    """
-    Handler para POST /items
-    (Corresponde a tu PostItemLambda)
-    """
     try:
         data = json.loads(event.get('body', '{}'))
         

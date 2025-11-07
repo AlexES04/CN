@@ -1,17 +1,17 @@
 @echo OFF
 setlocal
 
-REM --- FORZAR AL SCRIPT A EJECUTARSE DESDE SU PROPIA CARPETA ---
+REM
 cd /d "%~dp0"
 echo --- Directorio de trabajo establecido en: %cd% ---
 
-REM --- Configura tus variables ---
+REM
 SET AWS_ACCOUNT_ID=339713111309
 SET AWS_REGION=us-east-1
 SET REPOSITORY_NAME=products-app-lambdas
 SET ECR_BASE=%AWS_ACCOUNT_ID%.dkr.ecr.%AWS_REGION%.amazonaws.com/%REPOSITORY_NAME%
 
-REM --- Paso 1: Iniciar sesión en ECR ---
+REM
 echo --- Iniciando sesion en ECR (%AWS_REGION%) ---
 aws ecr get-login-password --region %AWS_REGION% | docker login --username AWS --password-stdin %AWS_ACCOUNT_ID%.dkr.ecr.%AWS_REGION%.amazonaws.com
 IF %ERRORLEVEL% NEQ 0 (
@@ -21,12 +21,12 @@ IF %ERRORLEVEL% NEQ 0 (
 echo --- Login de ECR exitoso. ---
 echo.
 
-REM --- Paso 2: Construir y Subir cada Lambda ---
+REM
     
 echo ----------------------------------------------------
 echo --- Procesando post-item ---
 echo ----------------------------------------------------
-REM --- Quitado buildx, añadido --provenance=false ---
+REM
 docker build --platform linux/amd64 --provenance=false -f "lambdas/postItem/Dockerfile" -t "%ECR_BASE%:post-item" .
 IF %ERRORLEVEL% NEQ 0 ( echo *** ERROR: Fallo en BUILD de post-item *** & goto :error )
 docker push "%ECR_BASE%:post-item"
@@ -36,7 +36,7 @@ echo.
 echo ----------------------------------------------------
 echo --- Procesando get-items ---
 echo ----------------------------------------------------
-REM --- Quitado buildx, añadido --provenance=false ---
+REM
 docker build --platform linux/amd64 --provenance=false -f "lambdas/getItems/Dockerfile" -t "%ECR_BASE%:get-items" .
 IF %ERRORLEVEL% NEQ 0 ( echo *** ERROR: Fallo en BUILD de get-items *** & goto :error )
 docker push "%ECR_BASE%:get-items"
@@ -46,7 +46,7 @@ echo.
 echo ----------------------------------------------------
 echo --- Procesando get-item ---
 echo ----------------------------------------------------
-REM --- Quitado buildx, añadido --provenance=false ---
+REM
 docker build --platform linux/amd64 --provenance=false -f "lambdas/getItem/Dockerfile" -t "%ECR_BASE%:get-item" .
 IF %ERRORLEVEL% NEQ 0 ( echo *** ERROR: Fallo en BUILD de get-item *** & goto :error )
 docker push "%ECR_BASE%:get-item"
@@ -56,7 +56,7 @@ echo.
 echo ----------------------------------------------------
 echo --- Procesando put-item ---
 echo ----------------------------------------------------
-REM --- Quitado buildx, añadido --provenance=false ---
+REM
 docker build --platform linux/amd64 --provenance=false -f "lambdas/putItem/Dockerfile" -t "%ECR_BASE%:put-item" .
 IF %ERRORLEVEL% NEQ 0 ( echo *** ERROR: Fallo en BUILD de put-item *** & goto :error )
 docker push "%ECR_BASE%:put-item"
@@ -66,7 +66,7 @@ echo.
 echo ----------------------------------------------------
 echo --- Procesando delete-item ---
 echo ----------------------------------------------------
-REM --- Quitado buildx, añadido --provenance=false ---
+REM
 docker build --platform linux/amd64 --provenance=false -f "lambdas/deleteItem/Dockerfile" -t "%ECR_BASE%:delete-item" .
 IF %ERRORLEVEL% NEQ 0 ( echo *** ERROR: Fallo en BUILD de delete-item *** & goto :error )
 docker push "%ECR_BASE%:delete-item"

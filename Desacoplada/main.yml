@@ -26,10 +26,9 @@ Parameters:
     Description: DynamoDB table name
 
 # ============================================================================
-# NETWORKING RESOURCES
+# PERMISSIONS
 # ============================================================================
 Resources:
-
   PostInvokePermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -144,13 +143,10 @@ Resources:
         Variables:
           DB_DYNAMONAME: !Ref DBDynamoName
 
-# ============================================================================
-  # VPC ENDPOINTS (Para acceso privado a ECR)
-  # ============================================================================
 
-  # ============================================================================
-  # API GATEWAY RESOURCES
-  # ============================================================================
+# ============================================================================
+# API GATEWAY RESOURCES
+# ============================================================================
   
   RestAPI:
     Type: AWS::ApiGateway::RestApi
@@ -206,10 +202,10 @@ Resources:
       HttpMethod: GET
       AuthorizationType: NONE
       ApiKeyRequired: true
-      RequestParameters: # Mantenemos esto para validación
+      RequestParameters:
         method.request.path.id: true
       Integration:
-        Type: AWS_PROXY # Integración de Lambda
+        Type: AWS_PROXY
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetItemLambda.Arn}/invocations"
 
@@ -221,10 +217,10 @@ Resources:
       HttpMethod: PUT
       AuthorizationType: NONE
       ApiKeyRequired: true
-      RequestParameters: # Mantenemos esto para validación
+      RequestParameters:
         method.request.path.id: true
       Integration:
-        Type: AWS_PROXY # Integración de Lambda
+        Type: AWS_PROXY
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PutItemLambda.Arn}/invocations"
 
@@ -236,14 +232,12 @@ Resources:
       HttpMethod: DELETE
       AuthorizationType: NONE
       ApiKeyRequired: true
-      RequestParameters: # Mantenemos esto para validación
+      RequestParameters:
         method.request.path.id: true
       Integration:
-        Type: AWS_PROXY # Integración de Lambda
+        Type: AWS_PROXY
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteItemLambda.Arn}/invocations"
-
-  # --- Métodos OPTIONS para CORS (se quedan igual) ---
   
   OptionsItemsMethod:
     Type: AWS::ApiGateway::Method
@@ -298,8 +292,6 @@ Resources:
             method.response.header.Access-Control-Allow-Headers: true
             method.response.header.Access-Control-Allow-Methods: true
             method.response.header.Access-Control-Allow-Origin: true
-
-  # --- Permisos para que API Gateway invoque las Lambdas ---
 
   APIDeployment:
     Type: AWS::ApiGateway::Deployment

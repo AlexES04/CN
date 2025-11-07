@@ -24,8 +24,8 @@ def create_item():
     """Crea un nuevo producto."""
     try:
         data = request.get_json()
-        product = Product(**data) # <-- Refactorizado
-        created = db.create_product(product) # <-- Refactorizado
+        product = Product(**data)
+        created = db.create_product(product)
         return jsonify(created.model_dump()), 201
     except ValidationError as e:
         return jsonify({'error': 'Validation error', 'details': e.errors()}), 400
@@ -34,13 +34,13 @@ def create_item():
     except Exception as e:
         return jsonify({'error': 'Server error', 'details': str(e)}), 500
 
-@app.route('/items/<product_id>', methods=['GET']) # <-- Refactorizado
-def get_item(product_id): # <-- Refactorizado
+@app.route('/items/<product_id>', methods=['GET'])
+def get_item(product_id):
     """Obtiene un producto por su ID."""
     try:
-        product = db.get_product(product_id) # <-- Refactorizado
+        product = db.get_product(product_id)
         if product:
-            return jsonify(product.model_dump()), 200 # <-- Refactorizado
+            return jsonify(product.model_dump()), 200
         return jsonify({'error': 'Item no encontrado'}), 404
     except ClientError as e:
         return jsonify({'error': 'DynamoDB error', 'details': e.response['Error']['Message']}), 500
@@ -51,24 +51,23 @@ def get_item(product_id): # <-- Refactorizado
 def get_all_items():
     """Obtiene todos los productos."""
     try:
-        # Esta era la línea que fallaba en tus logs
-        products = db.get_all_products() # <-- Refactorizado
-        return jsonify([p.model_dump() for p in products]), 200 # <-- Refactorizado
+        products = db.get_all_products()
+        return jsonify([p.model_dump() for p in products]), 200
     except ClientError as e:
         return jsonify({'error': 'DynamoDB error', 'details': e.response['Error']['Message']}), 500
     except Exception as e:
         return jsonify({'error': 'Server error', 'details': str(e)}), 500
 
-@app.route('/items/<product_id>', methods=['PUT']) # <-- Refactorizado
-def update_item(product_id): # <-- Refactorizado
+@app.route('/items/<product_id>', methods=['PUT'])
+def update_item(product_id):
     """Actualiza un producto."""
     try:
         data = request.get_json()
-        data.pop('product_id', None) # <-- Refactorizado
-        data.pop('created_at', None) # Buena práctica, no dejar que el cliente lo cambie
+        data.pop('product_id', None)
+        data.pop('created_at', None)
         
-        product = Product(**data) # <-- Refactorizado
-        updated = db.update_product(product_id, product) # <-- Refactorizado
+        product = Product(**data)
+        updated = db.update_product(product_id, product)
         
         if updated:
             return jsonify(updated.model_dump()), 200
@@ -80,11 +79,11 @@ def update_item(product_id): # <-- Refactorizado
     except Exception as e:
         return jsonify({'error': 'Server error', 'details': str(e)}), 500
 
-@app.route('/items/<product_id>', methods=['DELETE']) # <-- Refactorizado
-def delete_item(product_id): # <-- Refactorizado
+@app.route('/items/<product_id>', methods=['DELETE'])
+def delete_item(product_id):
     """Elimina un producto."""
     try:
-        if db.delete_product(product_id): # <-- Refactorizado
+        if db.delete_product(product_id):
             return '', 204
         return jsonify({'error': 'Item no encontrado'}), 404
     except ClientError as e:

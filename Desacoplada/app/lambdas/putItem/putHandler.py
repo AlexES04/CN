@@ -3,22 +3,16 @@ import logging
 from pydantic import ValidationError
 from botocore.exceptions import ClientError
 from models.product import Product
-from common import db, _format_response, logger # Importamos desde common
+from common import db, _format_response, logger
 
 def handler(event, context):
-    """
-    Handler para PUT /items/{id}
-    (Corresponde a tu PutItemLambda)
-    """
     try:
         product_id = event['pathParameters']['id']
         data = json.loads(event.get('body', '{}'))
         
-        # Buena práctica: no permitir cambiar el ID o la fecha
         data.pop('product_id', None)
         data.pop('created_at', None)
         
-        # Validamos los datos que SÍ vienen
         product = Product(**data)
         updated = db.update_product(product_id, product)
         

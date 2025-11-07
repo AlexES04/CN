@@ -45,6 +45,5 @@ class Product(BaseModel):
         }
     
     def update_timestamp(self):
-        """Actualiza el campo updated_at a la hora UTC actual."""
         self.updated_at = datetime.utcnow().isoformat()
         
