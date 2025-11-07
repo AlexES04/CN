@@ -1,87 +1,81 @@
-@ECHO OFF
-SETLOCAL
+@echo OFF
+setlocal
 
-REM --- Configuración ---
-REM Reemplaza esto con tus valores si son diferentes
-SET "AWS_ACCOUNT_ID=339713111309"
-SET "AWS_REGION=us-east-1"
-SET "REPOSITORY_NAME=products-app-lambdas"
+REM --- FORZAR AL SCRIPT A EJECUTARSE DESDE SU PROPIA CARPETA ---
+REM %~dp0 es la unidad y la ruta de la carpeta del script (ej: C:\proyecto\app\)
+cd /d "%~dp0"
+echo --- Directorio de trabajo establecido en: %cd% ---
 
-REM --- Variables Calculadas ---
-SET "ECR_URI=%AWS_ACCOUNT_ID%.dkr.ecr.%AWS_REGION%.amazonaws.com"
-SET "FULL_REPO_URI=%ECR_URI%/%REPOSITORY_NAME%"
+REM --- Configura tus variables ---
+SET AWS_ACCOUNT_ID=339713111309
+SET AWS_REGION=us-east-1
+SET REPOSITORY_NAME=products-app-lambdas
+SET ECR_BASE=%AWS_ACCOUNT_ID%.dkr.ecr.%AWS_REGION%.amazonaws.com/%REPOSITORY_NAME%
 
 REM --- Paso 1: Iniciar sesión en ECR ---
-ECHO Iniciando sesion en ECR...
-aws ecr get-login-password --region %AWS_REGION% | docker login --username AWS --password-stdin %ECR_URI%
+echo --- Iniciando sesion en ECR (%AWS_REGION%) ---
+aws ecr get-login-password --region %AWS_REGION% | docker login --username AWS --password-stdin %AWS_ACCOUNT_ID%.dkr.ecr.%AWS_REGION%.amazonaws.com
 IF %ERRORLEVEL% NEQ 0 (
-    ECHO *** ERROR: Fallo al iniciar sesion en ECR. Abortando. ***
-    GOTO :eof
+    echo *** ERROR: Fallo en el login de ECR. ***
+    goto :error
 )
-ECHO ¡Inicio de sesion exitoso!
+echo --- Login de ECR exitoso. ---
+echo.
 
-REM --- Paso 2: Definir la función de ayuda ---
-GOTO :main
-
-REM Define una "función" (subrutina) para construir y subir
-:build_and_push
-    SET "FOLDER_NAME=%~1"
-    SET "IMAGE_TAG=%~2"
-    SET "DOCKERFILE_PATH=lambdas\%FOLDER_NAME%\Dockerfile"
-    SET "FULL_IMAGE_NAME=%FULL_REPO_URI%:%IMAGE_TAG%"
-
-    ECHO --------------------------------------------------
-    ECHO Construyendo: %FULL_IMAGE_NAME%
-    ECHO Dockerfile: %DOCKERFILE_PATH%
-    ECHO --------------------------------------------------
+REM --- Paso 2: Construir y Subir cada Lambda (Modo Repetitivo) ---
     
-    REM El '.' al final es CRUCIAL. Usa la carpeta actual (raíz) como contexto.
-    docker build -t "%FULL_IMAGE_NAME%" -f "%DOCKERFILE_PATH%" .
-    IF %ERRORLEVEL% NEQ 0 (
-        ECHO *** ERROR: Fallo en BUILD de %IMAGE_TAG% ***
-        EXIT /B 1
-    )
-    
-    ECHO Subiendo: %FULL_IMAGE_NAME%
-    docker push "%FULL_IMAGE_NAME%"
-    IF %ERRORLEVEL% NEQ 0 (
-        ECHO *** ERROR: Fallo en PUSH de %IMAGE_TAG% ***
-        EXIT /B 1
-    )
-    
-    ECHO ¡Exito para %IMAGE_TAG%!
-    EXIT /B 0
+echo ----------------------------------------------------
+echo --- Procesando post-item ---
+echo ----------------------------------------------------
+docker build -f "lambdas/postItem/Dockerfile" -t "%ECR_BASE%:post-item" .
+IF %ERRORLEVEL% NEQ 0 ( echo *** ERROR: Fallo en BUILD de post-item *** & goto :error )
+docker push "%ECR_BASE%:post-item"
+IF %ERRORLEVEL% NEQ 0 ( echo *** ERROR: Fallo en PUSH de post-item *** & goto :error )
+echo.
 
-:main
-    REM --- Paso 3: Construir y Subir cada Lambda ---
-    ECHO.
-    CALL :build_and_push postItem post-item
-    IF %ERRORLEVEL% NEQ 0 GOTO :error
+echo ----------------------------------------------------
+echo --- Procesando get-items ---
+echo ----------------------------------------------------
+docker build -f "lambdas/getItems/Dockerfile" -t "%ECR_BASE%:get-items" .
+IF %ERRORLEVEL% NEQ 0 ( echo *** ERROR: Fallo en BUILD de get-items *** & goto :error )
+docker push "%ECR_BASE%:get-items"
+IF %ERRORLEVEL% NEQ 0 ( echo *** ERROR: Fallo en PUSH de get-items *** & goto :error )
+echo.
 
-    ECHO.
-    CALL :build_and_push getItems get-items
-    IF %ERRORLEVEL% NEQ 0 GOTO :error
+echo ----------------------------------------------------
+echo --- Procesando get-item ---
+echo ----------------------------------------------------
+docker build -f "lambdas/getItem/Dockerfile" -t "%ECR_BASE%:get-item" .
+IF %ERRORLEVEL% NEQ 0 ( echo *** ERROR: Fallo en BUILD de get-item *** & goto :error )
+docker push "%ECR_BASE%:get-item"
+IF %ERRORLEVEL% NEQ 0 ( echo *** ERROR: Fallo en PUSH de get-item *** & goto :error )
+echo.
 
-    ECHO.
-    CALL :build_and_push getItem get-item
-    IF %ERRORLEVEL% NEQ 0 GOTO :error
+echo ----------------------------------------------------
+echo --- Procesando put-item ---
+echo ----------------------------------------------------
+docker build -f "lambdas/putItem/Dockerfile" -t "%ECR_BASE%:put-item" .
+IF %ERRORLEVEL% NEQ 0 ( echo *** ERROR: Fallo en BUILD de put-item *** & goto :error )
+docker push "%ECR_BASE%:put-item"
+IF %ERRORLEVEL% NEQ 0 ( echo *** ERROR: Fallo en PUSH de put-item *** & goto :error )
+echo.
 
-    ECHO.
-    CALL :build_and_push putItem put-item
-    IF %ERRORLEVEL% NEQ 0 GOTO :error
+echo ----------------------------------------------------
+echo --- Procesando delete-item ---
+echo ----------------------------------------------------
+docker build -f "lambdas/deleteItem/Dockerfile" -t "%ECR_BASE%:delete-item" .
+IF %ERRORLEVEL% NEQ 0 ( echo *** ERROR: Fallo en BUILD de delete-item *** & goto :error )
+docker push "%ECR_BASE%:delete-item"
+IF %ERRORLEVEL% NEQ 0 ( echo *** ERROR: Fallo en PUSH de delete-item *** & goto :error )
+echo.
 
-    ECHO.
-    CALL :build_and_push deleteItem delete-item
-    IF %ERRORLEVEL% NEQ 0 GOTO :error
-
-    ECHO --------------------------------------------------
-    ECHO ¡PROCESO COMPLETADO!
-    ECHO Todas las 5 imagenes han sido subidas a ECR.
-    ECHO --------------------------------------------------
-    GOTO :end
+echo ----------------------------------------------------
+echo --- SCRIPT COMPLETADO ---
+echo --- Todas las 5 imagenes han sido subidas a ECR. ---
+echo ----------------------------------------------------
+goto :EOF
 
 :error
-    ECHO *** SCRIPT FALLIDO DEBIDO A UN ERROR ANTERIOR. ***
+echo *** SCRIPT FALLIDO DEBIDO A UN ERROR ANTERIOR. ***
 
-:end
-ENDLOCAL
+endlocal
