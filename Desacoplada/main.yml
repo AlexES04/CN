@@ -29,63 +29,46 @@ Parameters:
 # NETWORKING RESOURCES
 # ============================================================================
 Resources:
-  LambdaSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Security group for Lambda functions
-      VpcId: !Ref VpcId
-
-  EndpointSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: SG for VPC Endpoints
-      VpcId: !Ref VpcId
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 443
-          ToPort: 443
-          SourceSecurityGroupId: !Ref LambdaSecurityGroup
-
-  PostInvokePermission:
+  PostItemsPermission:
     Type: AWS::Lambda::Permission
     Properties:
-      FunctionName: !Ref PostItemLambda
+      FunctionName: !GetAtt PostItemLambda.Arn
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/*/*"
-    
-  GetInvokePermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref GetItemLambda
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/*/*"
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/POST/items"
 
-    GetAllInvokePermission:
+  GetItemsPermission:
     Type: AWS::Lambda::Permission
     Properties:
-      FunctionName: !Ref GetItemsLambda
+      FunctionName: !GetAtt GetItemsLambda.Arn
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/*/*"
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/GET/items"
 
-  PutInvokePermission:
+  GetItemPermission:
     Type: AWS::Lambda::Permission
     Properties:
-      FunctionName: !Ref PutItemLambda
+      FunctionName: !GetAtt GetItemLambda.Arn
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/*/*"
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/GET/items/{id}"
+
+  PutItemPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt PutItemLambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/PUT/items/{id}"
+
+  DeleteItemPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt DeleteItemLambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/DELETE/items/{id}"
       
-  DeleteInvokePermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref DeleteItemLambda
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/*/*"
-
 # ============================================================================
 # LAMBDA FUNCTIONS
 # ============================================================================
@@ -100,9 +83,6 @@ Resources:
       Role: !Ref IamRoleARN
       Timeout: 30
       MemorySize: 512
-      VpcConfig:
-        SecurityGroupIds: [!Ref LambdaSecurityGroup]
-        SubnetIds: !Ref SubnetIds
       Environment:
         Variables:
           DB_DYNAMONAME: !Ref DBDynamoName
@@ -117,9 +97,6 @@ Resources:
       Role: !Ref IamRoleARN
       Timeout: 30
       MemorySize: 512
-      VpcConfig:
-        SecurityGroupIds: [!Ref LambdaSecurityGroup]
-        SubnetIds: !Ref SubnetIds
       Environment:
         Variables:
           DB_DYNAMONAME: !Ref DBDynamoName
@@ -134,9 +111,6 @@ Resources:
       Role: !Ref IamRoleARN
       Timeout: 30
       MemorySize: 512
-      VpcConfig:
-        SecurityGroupIds: [!Ref LambdaSecurityGroup]
-        SubnetIds: !Ref SubnetIds
       Environment:
         Variables:
           DB_DYNAMONAME: !Ref DBDynamoName
@@ -151,9 +125,6 @@ Resources:
       Role: !Ref IamRoleARN
       Timeout: 30
       MemorySize: 512
-      VpcConfig:
-        SecurityGroupIds: [!Ref LambdaSecurityGroup]
-        SubnetIds: !Ref SubnetIds
       Environment:
         Variables:
           DB_DYNAMONAME: !Ref DBDynamoName
@@ -168,9 +139,6 @@ Resources:
       Role: !Ref IamRoleARN
       Timeout: 30
       MemorySize: 512
-      VpcConfig:
-        SecurityGroupIds: [!Ref LambdaSecurityGroup]
-        SubnetIds: !Ref SubnetIds
       Environment:
         Variables:
           DB_DYNAMONAME: !Ref DBDynamoName
@@ -179,57 +147,6 @@ Resources:
   # VPC ENDPOINTS (Para acceso privado a ECR)
   # ============================================================================
 
-  ECRApiEndpoint:
-    Type: AWS::EC2::VPCEndpoint
-    Properties:
-      VpcId: !Ref VpcId
-      ServiceName: !Sub "com.amazonaws.${AWS::Region}.ecr.api"
-      VpcEndpointType: Interface
-      SubnetIds: !Ref SubnetIds
-      PrivateDnsEnabled: true
-      SecurityGroupIds:
-        - !Ref EndpointSecurityGroup
-
-  ECRDkrEndpoint:
-    Type: AWS::EC2::VPCEndpoint
-    Properties:
-      VpcId: !Ref VpcId
-      ServiceName: !Sub "com.amazonaws.${AWS::Region}.ecr.dkr"
-      VpcEndpointType: Interface
-      SubnetIds: !Ref SubnetIds
-      PrivateDnsEnabled: true
-      SecurityGroupIds:
-        - !Ref EndpointSecurityGroup
-
-  S3GatewayEndpoint:
-    Type: AWS::EC2::VPCEndpoint
-    Properties:
-      VpcId: !Ref VpcId
-      ServiceName: !Sub "com.amazonaws.${AWS::Region}.s3"
-      VpcEndpointType: Gateway
-      RouteTableIds: 
-        - "rtb-08285e40991dbb396"
-
-  CloudWatchLogsEndpoint:
-    Type: AWS::EC2::VPCEndpoint
-    Properties:
-      VpcId: !Ref VpcId
-      ServiceName: !Sub "com.amazonaws.${AWS::Region}.logs"
-      VpcEndpointType: Interface
-      SubnetIds: !Ref SubnetIds
-      PrivateDnsEnabled: true
-      SecurityGroupIds:
-        - !Ref EndpointSecurityGroup
-
-  DynamoDBEndpoint:
-    Type: AWS::EC2::VPCEndpoint
-    Properties:
-      VpcId: !Ref VpcId
-      ServiceName: !Sub "com.amazonaws.${AWS::Region}.dynamodb"
-      VpcEndpointType: Gateway
-      RouteTableIds:
-        - "rtb-08285e40991dbb396"
-  
   # ============================================================================
   # API GATEWAY RESOURCES
   # ============================================================================
@@ -382,46 +299,6 @@ Resources:
             method.response.header.Access-Control-Allow-Origin: true
 
   # --- Permisos para que API Gateway invoque las Lambdas ---
-
-  PostItemsPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !GetAtt PostItemLambda.Arn
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/POST/items"
-
-  GetItemsPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !GetAtt GetItemsLambda.Arn
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/GET/items"
-
-  GetItemPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !GetAtt GetItemLambda.Arn
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/GET/items/{id}"
-
-  PutItemPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !GetAtt PutItemLambda.Arn
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/PUT/items/{id}"
-
-  DeleteItemPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !GetAtt DeleteItemLambda.Arn
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/DELETE/items/{id}"
 
   APIDeployment:
     Type: AWS::ApiGateway::Deployment
