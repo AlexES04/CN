@@ -9,7 +9,7 @@
 ### Introducción
 Esta es la primera parte de la práctica de la asignatura de Computación en la Nube, de la Universidad de Las Palmas de Gran Canaria. Consiste en desplegar una aplicación web robusta y escalable usando servicios de AWS. Se parte de una base con ficheros ``.yml`` que permite desplegar recursos para lograr un diseño monolito o acoplado. El diagrama de la infraestructura se presenta en la siguiente imagen:
 
-![Diagrama de infraestructura monolito](Recursos/diagramaMonolito.png "Diagrama monolito")
+![Diagrama de infraestructura monolito](recursos/diagramaMonolito.png "Diagrama monolito")
 
 La aplicación web que se despliega simula una lista de la compra donde se pueden añadir, editar, visualziar y eliminar elementos (operaciones CRUD). Cada elemento (o producto de compra) posee una categoría y una cantidad especificadas.
 
@@ -102,14 +102,25 @@ El CORS (_Cross-Origin Resource Sharing_) es el mecanismo de seguridad fundament
 
 
 ### Pricing
+| Servicio/Recurso | Precio mensual ($) | Precio anual ($) |
+|--------------|--------------|--------------|
+| Network Load Balancer       | 16,45       | 197,40  |
+| AWS FARGATE        | 4,43      | 53,16        |
+| VPC Endpoints | 26,90 | 322,80 |
+| ECR | 0,7 | 8,4 | 
+| **TOTAL** | 47,85 | 574,2 |
 
+#### Notas
+Se ha estimado un total de 500 tareas/días de FARGATE.
+Los accesos a la base de datos son despreciables ya que AWS proporciona 2.5M de peticiones mensuales gratis.
+El costo de la API Gateway también es despreciable porque, fuera de la capa gratuita, AWS cobra 3,5$/millón de peticiones. La estimación está muy alejada de ese valores.
 
 ## Parte 2 - Modelo desacoplado
 
 ### Introducción
 Esta es la segunda parte de la práctica de la asignatura de Computación en la Nube, de la Universidad de Las Palmas de Gran Canaria. Consiste en desplegar una aplicación web robusta y escalable usando servicios de AWS. Se parte de una base con ficheros ``.yml`` que permite desplegar recursos para lograr un diseño desacoplado. El diagrama de la infraestructura se presenta en la siguiente imagen:
 
-![Diagrama de infraestructura desacoplada](Recursos/diagramaDesacoplada.png "Diagrama Desacoplada")
+![Diagrama de infraestructura desacoplada](recursos/diagramaDesacoplada.png "Diagrama Desacoplada")
 
 La aplicación web que se despliega simula una lista de la compra donde se pueden añadir, editar, visualziar y eliminar elementos (operaciones CRUD). Cada elemento (o producto de compra) posee una categoría y una cantidad especificadas.
 
@@ -145,8 +156,13 @@ Las lambdas son servicios _serverless_ capaces de ejecutar un código como funci
 7) Copiar la URL y la clave de la API en el Frontend (archivo _shopList.html_), en el apartado de "Configuración", para acceder. También se podrá probar las conexiones desde _Postman_ con la URL y la clave. Tener en cuenta que la URL tendrá que terminar en ``/prod``.
 
 ### Pricing
+| Servicio/Recurso | Precio mensual ($) | Precio anual ($) |
+|--------------|--------------|--------------|
+| ECR | 0,43 | 5,16 | 
+| **TOTAL** | 0,43 | 5,16 |
 
-
+#### Notas
+El costo de las lambdas es despreciable, ya que AWS proporciona 1M de ejecuciones mensuales gratis. A partir del millón de peticiones, el costo asciende a 0,2 centavos/millón de peticiones.
 
 ## Uso de la IA
 El uso de la inteligencia artificial en esta práctica se describe a continuación:
