@@ -15,10 +15,28 @@ La aplicación web que se despliega simula una lista de la compra donde se puede
 En este apartado se mostrarán y desglosarán los recursos y servicios utilizados en la infraestructua y sus conexiones.
 
 ### API Gateway
+Todo el conjunto del **API Gateway** sirve como una puerta de entrada segura y pública para la aplicación desplegada. En este caso, requiere la clave de la API para poder usar los métodos HTTP (``ApiKeyRequired: True``), así que el cliente (usuario) tendrá que ingresarla.
 
+Se utiliza una **API REST**, que presenta una arquitectura con las siguientes características:
+- Comunicación cliente-servidor con responsabilidades separadas: interfaz vs. almacenamiento y procesamiento de datos.
+- Sin estado, el servidor no almacena información del cliente, por lo que cada petición tendrá que contener toda la información.
+- Uso de recursos.
+- Uso de métodos HTTP para comunicar con el servidor.
+
+La API Gateway contiene dos recursos a los que accede para responder a las peticiones:
+- **Items Resource**: colección de todos los elementos (productos de la compra).
+- **Item Resource**: elemento específico de la colección.
+
+Por último, el **VPC Link** es el componente que permite tener una conexión privada y segura con el balanceador de carga, que es privado. Al cerrar la infraestructura a una nube virtual privada (VPC) y restringir su acceso a Internet, se necesita puntos de acceso privados para acceder y conseguir que la aplicación web y las operaciones funcionen.
 
 ### Load Balancer
+El **balanceador de carga** consigue la distribución de carga, que permite que varios recursos trabajen de manera coordinada para atender peticiones de forma eficiente y evitar atascos o saturación de paquetes. En esta arquitectura se usa un balanceador de tipo red (_Network Load Balancer_), que está diesñado para proporcionar un rendimiento alto y asegurar baja latencia.
 
+El recurso principal es el balanceador de carga de red, que mira la dirección IP y el puerto de la petición entrante. Este recusro es privado (``Scheme: internal``), solo se permite su acceso a través del VPC Link del API Gateway.
+
+Todas las entradas se reciben por el **_Listener_** (oyente), que escucha por el puerto 8080 y acepta paquetes TCP (``Port: 8080 | Protocol: TCP``). Cuando recibe un paquete, lo reenvía directamente al grupo objetivo (_Target Group_).
+
+El **grupo objetivo** es el conjunto de recursos o servicios a donde será dirigido el trabajo. Cuando sepa qué contenedores estén funcionando correctamente (marcados como _Healthy_), reenvía el paquete TCP a uno de esos contenedores.
 
 ### ECS
 
@@ -28,19 +46,17 @@ En este apartado se mostrarán y desglosarán los recursos y servicios utilizado
 
 ### Base de datos y ECR
 
+### CORS
+## Explicaciones y conceptos (TEMPORAL)
 
+Se va a utilizar una base de datos DynamoDB por la simplicidad de la aplicación web, ya que los accesos no requieren consultas complejas. Además, es escalable e ideal si tiene picos de tráfico, se paga por uso y AWS se encarga de todo.
+#### Archivo _db_dynamo.yml_
+- BillingMode: modo de facturación y capacidad de la tabla. PAY_PER_REQUEST (a demanda) o PROVISIONES (se especifican las unidades de r/w).
 
-## Explicaciones y conceptos
-
-Se va a utilizar una base de datos DynamoDB por la simplicidad de la aplicación web, ya que los accesos no requieren consultas complejas. Además, es escalable e ideal si tiene picos de tráfico, se paga por uso y AWS se encarga de todo. 
 
 Las **EC2** (Elastic Compute Cloud) permiten alquilar capacidad de computación de manera flexible y escalable, proporcionando servidores virtuales completos donde se tiene control total sobre el SO, aplicaciones y configuración de red.
 Las ventajas principales son que incluyen escalabilidad automática, pago por tiempo real y disponibilidad global a través de múltiples regiones y zonas de disponibilidad.
 Para un inicio, sería recomendable un modelo EC2 de tipo _On-Demand_ (pago por segundo). Si la aplicación llegara a ser más estable y grande, de tipo _Reserved Instances_.
-
-
-La **distribución de carga** permite que múltiples recursos trabajen de manera coordinada para atender peticiones de forma eficiente. Los balanceadores de carga son, precisamente, esos intermediarios inteligentes que dirigen el tráficohacia los servidores más apropiados según unos criterios indicados.
-El Elastic Load Balancer (ELB) es un servicio de carga completamente gestionado por AWS. Existe el Application Load Balancer y el Network Load Balancer. Para peticiones HTTP/HTTPS interesa el Application Load Balancer (ALB), ya que es ideal para aplicaciones web. De todas formas, se usará el NLB porque está diseñado para un rendimiento alto y baja latencia.
 
 
 Las **ECS** (Elastic Container Service) permiten el despligue y gestión de contenedores Docker en AWS de forma escalable y eficiente, funcionando como un balanceador de carga sobre las instancias EC2 disponibles previamente.
@@ -63,31 +79,6 @@ Las **lambdas** son capaces de ejecutar un código como funciones virtuales inde
 Se paga por petición y por tiempo de computación (1M de peticiones gratuitas --> 0,2€/1M).
 
 
-## Puesta en marcha
-1) Crear una pila para el despliegue de un repositorio ECR en CloudFormation (archivo _ecr.yml_). En los parámetros se tiene que especificar:
-    - Nombre de la pila.
-    - Nombre de rol de IAM.
-
-2) Crear una pila para el despliegue de la base de datos (archivo *db_dynamodb.yml*). En los parámetros se tiene que especificar:
-    - Nombre de la pila.
-    - Nombre de rol de IAM.
-
-3) Configurar el servicio AWS con ``aws configure`` con los datos de la sesión de laboratorio.
-
-4) Ejecutar comandos de envío del repositorio ECR creado. Para ello, hay que ir al repositorio que se desplegó con la primera pila y darle a "Ver comandos de envío". Es necesario que Docker Desktop esté en ejecución y que la sesión de AWS esté abierta con token válido.
-
-5) Crear una pila para el despliegue de la infraestructura (archivo _main.yml_). En los parámetros se tiene que especificar:
-    - Tipo de base de datos. 
-    - 2 subnets (mínimo).
-    - ID de la VPC.
-    - Nombre de rol de IAM.
-    - Nombre de la imagen, por defecto: products-app:latest
-6) Teniendo todas las pilas creadas, se necesita la URL de la API (punto de enlace predeterminado) y la clave. La URL de la API se incluye en las salidas de la última pila (archivo _main.yml_). Para la clave de la API hay que acceder a la sección de _API Gateway_ de AWS e ir al apartado de _Clave de API_. 
-
-7) Copiar la URL y la clave de la API en el Frontend (archivo _shopList.html_), en el apartado de "Configuración", para acceder. También se podrá probar las conexiones desde _Postman_ con la URL y la clave. Tener en cuenta que la URL tendrá que terminar en ``/prod``.
-
-
-
 
 ## Archivo _ecr.yml_
 La propiedad `ImageScanningConfiguration` configura el escaneo de seguridad de las imágenes y el parámetro _SCanOnPush_ indica si se activa o desactiva el escaneo automático.
@@ -104,13 +95,7 @@ Básicamente, esta políotica mantiene las 2 imágenes más recientes y elimina 
 Dentro de las salidas del .yml tenemos:
 - ECR URI: URL completa para acceder al repositorio.
 
-## Archivo _db_dynamo.yml_
-Dentro de los recursos se pueden definir los siguientes aspectos:
-- AttributeName: ticket_id: atributo clave.
-- AttributeType: tipo de dato (S -> String, N -> número, B -> binario).
-- KeySchema: qué atributos se usarán como claves primarias.
-- KeyType: especifica cuál es la clave de partición (HASH) o de ordenación (RANGE).
-- BillingMode: modo de facturación y capacidad de la tabla. PAY_PER_REQUEST (a demanda) o PROVISIONES (se especifican las unidades de r/w).
+
 
 ## Archivo _main.yml_
 ### Balanceador de carga
@@ -144,5 +129,29 @@ Por último, el despliegue para que la API sea accesible. ``APIDeployment`` repr
 En esta sección se exponen los valores imporantes de los recursos creados, que se podrán ver en la consola después de que el Stack se haya completado.
 
 Primeramente, el Endpoint de la API, que es la salica que porporciona la URL completa y funcional para interactuar con la API REST. El ID de la API Key proporciona el identificador único de la clave que se acaba de crear para autenticar solicitudes.
+
+## Puesta en marcha
+1) Crear una pila para el despliegue de un repositorio ECR en CloudFormation (archivo _ecr.yml_). En los parámetros se tiene que especificar:
+    - Nombre de la pila.
+    - Nombre de rol de IAM.
+
+2) Crear una pila para el despliegue de la base de datos (archivo *db_dynamodb.yml*). En los parámetros se tiene que especificar:
+    - Nombre de la pila.
+    - Nombre de rol de IAM.
+
+3) Configurar el servicio AWS con ``aws configure`` con los datos de la sesión de laboratorio.
+
+4) Ejecutar comandos de envío del repositorio ECR creado. Para ello, hay que ir al repositorio que se desplegó con la primera pila y darle a "Ver comandos de envío". Es necesario que Docker Desktop esté en ejecución y que la sesión de AWS esté abierta con token válido.
+
+5) Crear una pila para el despliegue de la infraestructura (archivo _main.yml_). En los parámetros se tiene que especificar:
+    - Tipo de base de datos. 
+    - 2 subnets (mínimo).
+    - ID de la VPC.
+    - Nombre de rol de IAM.
+    - Nombre de la imagen, por defecto: products-app:latest
+6) Teniendo todas las pilas creadas, se necesita la URL de la API (punto de enlace predeterminado) y la clave. La URL de la API se incluye en las salidas de la última pila (archivo _main.yml_). Para la clave de la API hay que acceder a la sección de _API Gateway_ de AWS e ir al apartado de _Clave de API_. 
+
+7) Copiar la URL y la clave de la API en el Frontend (archivo _shopList.html_), en el apartado de "Configuración", para acceder. También se podrá probar las conexiones desde _Postman_ con la URL y la clave. Tener en cuenta que la URL tendrá que terminar en ``/prod``.
+
 
 ## Pricing
