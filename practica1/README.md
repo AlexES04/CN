@@ -130,6 +130,8 @@ En este apartado se mostrarán y desglosarán los recursos y servicios utilizado
 #### Lambdas
 Las lambdas son servicios _serverless_ capaces de ejecutar un código como funciones virtuales independientes. Están diseñadas para procesos cortos y eficientes, ya que se ejecutan por un tiempo limitado bajo demanda o eventos específicos. Con esta infraestructura, es el servicio de API Gateway quien llama la ejecución de la API.
 
+La diferencia entre las lambdas y Amazon FARGATE es que _Lambda_ es un servicio de cómputo que se activa por eventos y diseñado para duraciones cortas (15 min máximo). Por otro lado, Amazon FARGATE es un servicio de gestión de infraestructura a partir de imágense de contenedor diseñada para duraciones largas, permitiendo la ejecución 24/7.
+
 ### Puesta en marcha
 1) Crear una pila para el despliegue de un repositorio ECR en CloudFormation (archivo _ecr.yml_). En los parámetros se tiene que especificar:
     - Nombre de la pila.
