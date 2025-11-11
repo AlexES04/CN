@@ -50,7 +50,10 @@ El **_ECS Cluster_** es un agrupamiento lógico, un espacio con un nombre donde 
 
 La **definición de tarea** o (_task definition_) es el plano que usa el ECS para crear un contenedor, asignando CPU y memoria, permiso que poseerá la tarea cuando esté funcionando y la definición del contenedor.
 
-El modo de operación es **FARGATE**, que es un servicio serverless, ya que no es necesaria la creación previa de instancias EC2, sino que, con la definición de tarea, el servicio lo crea. Esto conlleva que no se tenga que pagar por instancia EC2 creada en funcionamiento, sino por la tarea en funcionamiento.
+En cuanto a **FARGATE** se vende que es un servicio _serverless_, ya que el usuario no tiene que crear instancias EC2 previamente, sino que es gestionado por AWS. En su lugar, se crean las tareas con la definición de tarea, haciendo que se pague por tarea en funcionamiento en vez de por instancia EC2.
+
+Igualmente, se destaca que, aunque _FARGATE_ se venda como un "motor de cómputo _serverless_", realmente, no lo es, ya que el modo de ejecución es activo 24/7 y el modo de facturación es por segundo de ejecución. El escalado, por su parte, es muy lento.
+
 
 El **_ECS Service_** es el componente que se encarga de mantener el estado deseado definido (``DesiredCount:``).
 
@@ -119,9 +122,9 @@ En el caso de la arquitectura actual, se define una política para las peticione
 #### Notas
 La infraestructura presentada se concibe como un proyecto pequeño, así que se estima un total de 500 tareas/días. Por ello, los siguientes recursos/servicios resultan despreciables:
 - DynamoDB
-    - Almacenamiento: 25GB/mes gratis -> 0,25$ por GB.
-    - Accesos de lectura: 2,5M/mes gratis -> 0,625 por millón de solicitudes.
-    - Accesos de escritura: 2,5M/mes gratis -> 0,125 por millón de solicitudes.
+    - Almacenamiento: 25GB/mes gratis (_free tier_) -> 0,25$ por GB.
+    - Accesos de lectura: 2,5M/mes gratis (_free tier_) -> 0,625 por millón de solicitudes.
+    - Accesos de escritura: 2,5M/mes gratis (_free tier_) -> 0,125 por millón de solicitudes.
 - API Gateway: 3,5$ por millón de solicitudes en las primeras 333 millones.
 
 ## Parte 2 - Modelo desacoplado
@@ -140,6 +143,8 @@ En este apartado se mostrarán y desglosarán los recursos y servicios utilizado
 Las lambdas son servicios _serverless_ capaces de ejecutar un código como funciones virtuales independientes. Están diseñadas para procesos cortos y eficientes, ya que se ejecutan por un tiempo limitado bajo demanda o eventos específicos. Con esta infraestructura, es el servicio de API Gateway quien llama la ejecución de la API.
 
 La diferencia entre las lambdas y Amazon FARGATE es que _Lambda_ es un servicio de cómputo que se activa por eventos y diseñado para duraciones cortas (15 min máximo). Por otro lado, Amazon FARGATE es un servicio de gestión de infraestructura a partir de imágense de contenedor diseñada para duraciones largas, permitiendo la ejecución 24/7.
+
+En este caso, no se cuenta con una VPC, ya que, para usar recursos _Lambda_ con DynamoDB es necesario modificar la tabla de rutas. Sin embargo, con el rol _LabRole_ no es posible la modificación de la red.
 
 ### Puesta en marcha
 1) Crear una pila para el despliegue de un repositorio ECR en CloudFormation (archivo _ecr.yml_). En los parámetros se tiene que especificar:
@@ -165,6 +170,9 @@ La diferencia entre las lambdas y Amazon FARGATE es que _Lambda_ es un servicio 
 6) Teniendo todas las pilas creadas, se necesita la URL de la API (punto de enlace predeterminado) y la clave. La URL de la API se incluye en las salidas de la última pila (archivo _main.yml_). Para la clave de la API hay que acceder a la sección de _API Gateway_ de AWS e ir al apartado de _Clave de API_. 
 
 7) Copiar la URL y la clave de la API en el Frontend (archivo _shopList.html_), en el apartado de "Configuración", para acceder. También se podrá probar las conexiones desde _Postman_ con la URL y la clave. Tener en cuenta que la URL tendrá que terminar en ``/prod``.
+
+**NOTA:** al subir la pila, el usuario no debe tener en cuenta el orden de lanzamiento porque CloudFormation lo soluciona todo y lo ordena. No obstante, el orden de declaración de resursos y servicios sí importa por las posibles dependencias que existen entre ellos. 
+
 
 ### Pricing
 | Servicio/Recurso | Precio mensual ($) | Precio anual ($) |
