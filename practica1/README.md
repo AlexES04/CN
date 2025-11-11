@@ -29,7 +29,10 @@ La API Gateway contiene dos recursos a los que accede para responder a las petic
 - **Items Resource**: colección de todos los elementos (productos de la compra).
 - **Item Resource**: elemento específico de la colección.
 
-Por último, el **VPC Link** es el componente que permite tener una conexión privada y segura con el balanceador de carga, que es privado. Al cerrar la infraestructura a una nube virtual privada (VPC) y restringir su acceso a Internet, se necesita puntos de acceso privados para acceder y conseguir que la aplicación web y las operaciones funcionen.
+Por último, el **_VPC Link_** es el componente que permite tener una conexión privada y segura con un servicio o recurso que esté dentro de una VPC. Cuando se desea cerrar la infraestructura para mayor seguridad, el contexto se reduce a una nube virtual privada (VPC) restringiendo su acceso a Internet, por lo que se genera la necesidad de puntos de acceso privados para acceder y conseguir que la aplicación web y las operaciones funcionen. El _VPC Link_ integrado permite una conexión con el balanceador de carga de red implementado. 
+
+#### VPC
+Una **VPC** (_Virtual Private Cloud_) es una red privada virtual regional y existen varias existentes en AWS. Estas redes permiten crear un entorno de red aislado dentro del centro de datos de AWS funcionando como uno propio. Se divide en subredes y cuenta con tablas de enrutamiento para controlar el tráfico de red. En el caso de la presente infraestructura, la VPC es privada. 
 
 #### Load Balancer
 El **balanceador de carga** consigue la distribución de carga, que permite que varios recursos trabajen de manera coordinada para atender peticiones de forma eficiente y evitar atascos o saturación de paquetes. En esta arquitectura se usa un balanceador de tipo red (_Network Load Balancer_), que está diesñado para proporcionar un rendimiento alto y asegurar baja latencia.
@@ -41,7 +44,7 @@ Todas las entradas se reciben por el **_Listener_** (oyente), que escucha por el
 El **grupo objetivo** es el conjunto de recursos o servicios a donde será dirigido el trabajo. Cuando sepa qué contenedores estén funcionando correctamente (marcados como _Healthy_), reenvía el paquete TCP a uno de esos contenedores.
 
 #### ECS
-El **_Elastic Container Service_** (ECS) permite el despligue y la gestión de contenedores Docker de forma escalable y eficiente. Dependiendo del modo de operación, también funciona como balanceador de carga sobre las instancias EC2 sobra las que trabaje, aunque no es en este caso. Básicamente, es la parte central de la infraestructrua, donde se ejecuta el código.
+El **_Elastic Container Service_** (ECS) permite el despligue y la gestión de contenedores Docker de forma escalable y eficiente. Dependiendo del modo de operación, también funciona como balanceador de carga sobre las instancias EC2 sobra las que trabaje, aunque no es en este caso. Básicamente, es la parte central de la infraestructura, donde se ejecuta el código.
 
 El **_ECS Cluster_** es un agrupamiento lógico, un espacio con un nombre donde se almacenarán los servicios y tareas a ejecutar.
 
@@ -51,10 +54,10 @@ El modo de operación es **FARGATE**, que es un servicio serverless, ya que no e
 
 El **_ECS Service_** es el componente que se encarga de mantener el estado deseado definido (``DesiredCount:``).
 
-#### Endpoints
-Los **_VPC Endpoints_** son puntos de contacto o comunicación que permiten disponer de un camino privado y directo entre una VPC y un servicio AWS evitando la salida a Internet. Los endpoints de tipo _gateway_ proporcionan una entrada en la tabla de rutas del VPC. Los endpoints de tipo _interface_ despliegan una Interfaz de Red Elástica (ENI) con dirección privada dentro del VPC.
+El grupo objetivo realiza sucesivamente comprobaciones de estado sobre la tarea asignada para marcarla como "_healthy_" y que el balanceador de carga pueda enviar el tráfico a las tareas marcadas así. Si alguna no estuviera correctamente funcionando (marcada como "_unhealthy_"), el _ECS Service_ terminará dicha tarea y lanzará una nueva cumpliendo con el estado deseado.
 
-Una interfaz de red elástica es una tarjeta de red virtual que permite a los recursos conectarse a una VPC. Y una VPC es una nube de red privada, así que, en el contexto de AWS, es sección privada y aislada dentro del centro de datos de AWS.
+#### Endpoints
+Los **_VPC Endpoints_** son puntos de contacto o comunicación que permiten disponer de un camino privado y directo entre una VPC y un servicio AWS evitando la salida a Internet. Los endpoints de tipo _gateway_ proporcionan una entrada en la tabla de rutas del VPC. Los endpoints de tipo _interface_ despliegan una Interfaz de Red Elástica (ENI) con dirección privada dentro del VPC. Una interfaz de red elástica es una tarjeta de red virtual que permite a los recursos conectarse a una VPC.
 
 El **Endpoint para DynamoDB** permite la comunicación entre la aplicación y la base de datos. La definición de tarea lo usa cuando el código hace una llamada para modificar la base de datos (crear, ver, editar o eliminar un elemento).
 
@@ -68,16 +71,19 @@ El **Endpoint para los registros de CloudWatch** permite enviar los registros de
 
 
 #### Base de datos y ECR
-DynamoDB es una base de datos noSQL totalmente gestionada por AWS. La decisión de usar esta base de datos se debe a la simplicidad de la aplicación web desplegada, ya que los accesos no requieren consultas complejas. Además, es escalable e ideal si tiene picos de tráfico al estar gestionada por AWS.
+La base de datos integrada en la infraestructura es _DynamoDB_, que se trata de una base de datos noSQL totalmente gestionada por AWS. Una base de datos noSQL es no relacional, más aconsejable para datos no estructurados con mayor flexibilidad.
 
+La decisión de implementar esta base de datos se debe a la simplicidad de la aplicación web desplegada, ya que los accesos no requieren consultas complejas. Además, es escalable e ideal si tiene picos de tráfico al estar gestionada por AWS.
 Su modo de facturación está definida por la propiedad ``BillingMode: PAY_PER_REQUEST`` y se encuentra configurada a demanda, es decir, por accesos.
 
 El **registro de contenedores Docker** (_Elastic Container Registry_) es el servicio que almacena la imagen Docker después de construirla y antes de desplegarlo. En realidad, la imagen se almacena físicamente en un bucket de S3 (_Simple Storage Service_), que es un servicio de almacenamiento de objetos. Los buckets son los contenedores donde, efectivamente, se guardan esos objetos.
   
 #### CORS
-El CORS (_Cross-Origin Resource Sharing_) es el mecanismo de seguridad fundamental para las aplicaciones web. Es un conjunto de cabeceras HTTP que el servidor envía al navegador para asegurar la fiabilidad en el origen.
+El CORS (_Cross-Origin Resource Sharing_) es un mecanismo para integración de aplicaciones que define cómo las aplicaciones web clientes interactúan con los recursos de otro dominio. Básicamente, permite comprobar la autorización de una solicitud proveniente del navegador del cliente con los servidores de terceros (otro dominio).
 
-### Puesta en marcha
+En el caso de la arquitectura actual, se define una política para las peticiones _preflight_, aquellas que realiza el navegador cliente antes de intentar enviar una petición compleja.
+
+### Puesta en marcha (CloudFormation)
 1) Crear una pila para el despliegue de un repositorio ECR en CloudFormation (archivo _ecr.yml_). En los parámetros se tiene que especificar:
     - Nombre de la pila.
     - Nombre de rol de IAM.
@@ -111,9 +117,12 @@ El CORS (_Cross-Origin Resource Sharing_) es el mecanismo de seguridad fundament
 | **TOTAL** | 47,85 | 574,2 |
 
 #### Notas
-Se ha estimado un total de 500 tareas/días de FARGATE.
-Los accesos a la base de datos son despreciables ya que AWS proporciona 2.5M de peticiones mensuales gratis.
-El costo de la API Gateway también es despreciable porque, fuera de la capa gratuita, AWS cobra 3,5$/millón de peticiones. La estimación está muy alejada de ese valores.
+La infraestructura presentada se concibe como un proyecto pequeño, así que se estima un total de 500 tareas/días. Por ello, los siguientes recursos/servicios resultan despreciables:
+- DynamoDB
+    - Almacenamiento: 25GB/mes gratis -> 0,25$ por GB.
+    - Accesos de lectura: 2,5M/mes gratis -> 0,625 por millón de solicitudes.
+    - Accesos de escritura: 2,5M/mes gratis -> 0,125 por millón de solicitudes.
+- API Gateway: 3,5$ por millón de solicitudes en las primeras 333 millones.
 
 ## Parte 2 - Modelo desacoplado
 
@@ -164,7 +173,7 @@ La diferencia entre las lambdas y Amazon FARGATE es que _Lambda_ es un servicio 
 | **TOTAL** | 0,43 | 5,16 |
 
 #### Notas
-El costo de las lambdas es despreciable, ya que AWS proporciona 1M de ejecuciones mensuales gratis. A partir del millón de peticiones, el costo asciende a 0,2 centavos/millón de peticiones.
+Lambda: 1 millón de solicituds/mes gratis (_free tier_) -> 0,2$ por millón e solicitudes y 
 
 ## Uso de la IA
 El uso de la inteligencia artificial en esta práctica se describe a continuación:
