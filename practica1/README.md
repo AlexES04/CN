@@ -79,7 +79,7 @@ La base de datos integrada en la infraestructura es _DynamoDB_, que se trata de 
 La decisión de implementar esta base de datos se debe a la simplicidad de la aplicación web desplegada, ya que los accesos no requieren consultas complejas. Además, es escalable e ideal si tiene picos de tráfico al estar gestionada por AWS.
 Su modo de facturación está definida por la propiedad ``BillingMode: PAY_PER_REQUEST`` y se encuentra configurada a demanda, es decir, por accesos.
 
-El **registro de contenedores Docker** (_Elastic Container Registry_) es el servicio que almacena la imagen Docker después de construirla y antes de desplegarlo. En realidad, la imagen se almacena físicamente en un bucket de S3 (_Simple Storage Service_), que es un servicio de almacenamiento de objetos. Los buckets son los contenedores donde, efectivamente, se guardan esos objetos.
+El **registro de contenedores Docker** (_Elastic Container Registry_) es el servicio que almacena la imagen Docker después de construirla y antes de desplegarlo. En realidad, la imagen se almacena físicamente en un bucket de S3 (_Simple Storage Service_), que es un servicio de almacenamiento de objetos. Los buckets son los contenedores donde, efectivamente, se guardan esos objetos. Lo que aporta el ECR es seguridad de acceso y un endpoint que permite subir las imágenes de Docker fácilmente. Además, es capaz de replicar imágenes entre regiones o eliminar antiguas para ahorro de costos (``LifecyclePolicy``).
   
 #### CORS
 El CORS (_Cross-Origin Resource Sharing_) es un mecanismo para integración de aplicaciones que define cómo las aplicaciones web clientes interactúan con los recursos de otro dominio. Básicamente, permite comprobar la autorización de una solicitud proveniente del navegador del cliente con los servidores de terceros (otro dominio).
@@ -126,6 +126,9 @@ La infraestructura presentada se concibe como un proyecto pequeño, así que se 
     - Accesos de lectura: 2,5M/mes gratis (_free tier_) -> 0,625 por millón de solicitudes.
     - Accesos de escritura: 2,5M/mes gratis (_free tier_) -> 0,125 por millón de solicitudes.
 - API Gateway: 3,5$ por millón de solicitudes en las primeras 333 millones.
+- CloudWatch:
+    - Registros (ingesta de datos): 0,5$/GB al mes.
+    - Almacenamiento: 0,03$/GB al mes.
 
 ## Parte 2 - Modelo desacoplado
 
