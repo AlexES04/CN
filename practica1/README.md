@@ -208,6 +208,23 @@ En este caso, no se cuenta con una VPC, ya que, para usar recursos _Lambda_ con 
 #### Notas
 Lambda: 1 millón de solicituds/mes gratis (_free tier_) -> 0,2$ por millón e solicitudes
 
+#### Limitación de servicios
+Las limitaciones o barreras presentes en los servicios utilizados en las dos infraestructuras se presetan en la siguiente tabla:
+
+| Servicio/Recurso | Limitación |
+|--------------|--------------|
+| API Gateway | Timeout de 29 segundos |
+| API Gateway | Tasa de 10.000 peticiones/segundo |
+| Lambda | Timeout de 15 minutos (900 segundos) |
+| Lambda | Concurrencia de 1.000 simultáneas |
+| Lambda | Memoria entre 128MB y 10GB |
+| ECS FARGATE | De 20 a 200GB de almacenamiento |
+| NLB | Timeout de 350 segundos |
+| DynamoDB | Tamaño de ítem de 400KB |
+| DynamoDB | Tamaño de _query_ de 1MB |
+| DynamoDB | Tamaño de ítem de 400KB |
+
+
 ## Uso de la IA
 El uso de la inteligencia artificial en esta práctica se describe a continuación:
  - Uso para desarrollo de interfaz gráfica (``shopList.html``) para probar el correcto despliegue de los recursos.
