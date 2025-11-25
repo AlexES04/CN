@@ -54,6 +54,8 @@ La **definición de tarea** o (_task definition_) es el plano que usa el ECS par
 
 En cuanto a **FARGATE** se vende que es un servicio _serverless_, ya que el usuario no tiene que crear instancias EC2 previamente, sino que es gestionado por AWS. En su lugar, se crean las tareas con la definición de tarea, haciendo que se pague por tarea en funcionamiento en vez de por instancia EC2.
 
+En el caso de que la infraestructura contara con **instancias EC2** en vez de _FARGATE_, surgiría la ncesidad de incluir un grupo de autoescalado (_auto scalling group_). Este recurso es el que tiene el objetivo de gestionar el número de instancias ejecutadas, como el _ECS Service_. Para que funcione correctamente, sería necesario la adición de un _ECS Capacity Provider_ vinculado a ese grupo de autoescalado.
+
 Igualmente, se destaca que, aunque _FARGATE_ se venda como un "motor de cómputo _serverless_", realmente, no lo es, ya que el modo de ejecución es activo 24/7 y el modo de facturación es por segundo de ejecución. El escalado, por su parte, es muy lento.
 
 
@@ -75,14 +77,30 @@ El **Endpoint para el S3** permite acceder al bucket de S3 donde se almacena la 
 El **Endpoint para los registros de CloudWatch** permite enviar los registros del contenedor Fargate a CloudWatch, específicamente a la ruta ``/ecs/products``. 
 
 
-#### Base de datos y ECR
-La base de datos integrada en la infraestructura es _DynamoDB_, que se trata de una base de datos noSQL totalmente gestionada por AWS. Una base de datos noSQL es no relacional, más aconsejable para datos no estructurados con mayor flexibilidad.
+#### ECR
+El **registro de contenedores Docker** (_Elastic Container Registry_) es el servicio que almacena la imagen Docker después de construirla y antes de desplegarlo. En realidad, la imagen se almacena físicamente en un bucket de S3 (_Simple Storage Service_), que es un servicio de almacenamiento de objetos. Los buckets son los contenedores donde, efectivamente, se guardan esos objetos. Lo que aporta el ECR es seguridad de acceso y un endpoint que permite subir las imágenes de Docker fácilmente. Además, es capaz de replicar imágenes entre regiones o eliminar antiguas para ahorro de costos (``LifecyclePolicy``).
+
+#### Base de datos
+La base de datos integrada en la infraestructura es **_DynamoDB_**, que se trata de una base de datos noSQL totalmente gestionada por AWS. Una base de datos noSQL es no relacional, más aconsejable para datos no estructurados con mayor flexibilidad.
 
 La decisión de implementar esta base de datos se debe a la simplicidad de la aplicación web desplegada, ya que los accesos no requieren consultas complejas. Además, es escalable e ideal si tiene picos de tráfico al estar gestionada por AWS.
 Su modo de facturación está definida por la propiedad ``BillingMode: PAY_PER_REQUEST`` y se encuentra configurada a demanda, es decir, por accesos.
 
-El **registro de contenedores Docker** (_Elastic Container Registry_) es el servicio que almacena la imagen Docker después de construirla y antes de desplegarlo. En realidad, la imagen se almacena físicamente en un bucket de S3 (_Simple Storage Service_), que es un servicio de almacenamiento de objetos. Los buckets son los contenedores donde, efectivamente, se guardan esos objetos. Lo que aporta el ECR es seguridad de acceso y un endpoint que permite subir las imágenes de Docker fácilmente. Además, es capaz de replicar imágenes entre regiones o eliminar antiguas para ahorro de costos (``LifecyclePolicy``).
-  
+La otra base de datos que se ha podido integrar es **_PostgreSQL_**, un motor de base de datos donde el usuario es el responsable de su administración (no es _serverless_). Se trata de una base de datos relacional (SQL) y con datos estructurados. Esta se despliega en la propia VPC, así que no es necesario el uso de Endpoints para su acceso y tampoco roles IAM, ya que, en su lugar, se especifican y usan credenciales.
+
+Para la gestión de esta base de datos, es necesario el uso del servicio **_Amazon RDS_** (_Relational Database Service_). Este servicio tiene el objetivo de facilitar la configuración, operación y escala de la base de datos, encargándose de levantar el servidor, configurar backups, instalar software, etc. Lo único de lo que debe preocuparse el cliente es de la optimización de aplicaciones.
+
+Su implementación consistiría en integrar un balanceador de carga que distribuya las solicitudes de los clientes en los distintos servidores de aplicaciones desplegados. Estos servidores se alojan en instancias EC2 e interactúan con instancias de base de datos RDS proporcionando una capacidad de computación escalable. Aparte, se debería crear un grupo de seguridad para RDS que solo permita el acceso desde el ECS por el puerto estándar de Postgres (5432), teniendo en cuenta el balanceador de carga.
+
+A continuación, se presenta una tabla comparativa entre las dos bases de datos:
+
+| Característica | DynamoDB | Postgres |
+|--------------|--------------|--------------|
+| Modelo de pago       | Pago por uso      | Pago por tiempo (0.036$/hora)  |
+| Escalado        | Instantáneo    | Lento por la necesidad de cambiar de tipo servidor        |
+| Dificultad | Fácil, rápido de usar y configurar | Medio, necesita planificación previa |
+
+
 #### CORS
 El CORS (_Cross-Origin Resource Sharing_) es un mecanismo para integración de aplicaciones que define cómo las aplicaciones web clientes interactúan con los recursos de otro dominio. Básicamente, permite comprobar la autorización de una solicitud proveniente del navegador del cliente con los servidores de terceros (otro dominio).
 
@@ -122,11 +140,11 @@ En el caso de la arquitectura actual, se define una política para las peticione
 | **TOTAL** | 47,85 | 574,2 |
 
 #### Notas
-La infraestructura presentada se concibe como un proyecto pequeño, así que se estima un total de 500 tareas/días. Por ello, los siguientes recursos/servicios resultan despreciables:
+La infraestructura presentada se concibe como un proyecto pequeño, así que se estima un total de 500 peticiones por día. Por ello, los siguientes recursos/servicios resultan despreciables:
 - DynamoDB
     - Almacenamiento: 25GB/mes gratis (_free tier_) -> 0,25$ por GB.
-    - Accesos de lectura: 2,5M/mes gratis (_free tier_) -> 0,625 por millón de solicitudes.
-    - Accesos de escritura: 2,5M/mes gratis (_free tier_) -> 0,125 por millón de solicitudes.
+    - Accesos de lectura: 2,5M/mes gratis (_free tier_) -> 0,625$ por millón de solicitudes.
+    - Accesos de escritura: 2,5M/mes gratis (_free tier_) -> 0,125$ por millón de solicitudes.
 - API Gateway: 3,5$ por millón de solicitudes en las primeras 333 millones.
 - CloudWatch:
     - Registros (ingesta de datos): 0,5$/GB al mes.
@@ -147,9 +165,9 @@ En este apartado se mostrarán y desglosarán los recursos y servicios utilizado
 #### Lambdas
 Las lambdas son servicios _serverless_ capaces de ejecutar un código como funciones virtuales independientes. Están diseñadas para procesos cortos y eficientes, ya que se ejecutan por un tiempo limitado bajo demanda o eventos específicos. Con esta infraestructura, es el servicio de API Gateway quien llama la ejecución de la API.
 
-La diferencia entre las lambdas y Amazon FARGATE es que _Lambda_ es un servicio de cómputo que se activa por eventos y diseñado para duraciones cortas (15 min máximo). Por otro lado, Amazon FARGATE es un servicio de gestión de infraestructura a partir de imágense de contenedor diseñada para duraciones largas, permitiendo la ejecución 24/7. 
+La diferencia entre las lambdas y Amazon FARGATE es que _Lambda_ es un servicio de cómputo que se activa por eventos y diseñado para duraciones cortas (15 min máximo). En este caso, se ha puesto un tiempo de espera para ejecución completa del código (o ``Timeout``) de 30 segundos. Por otro lado, Amazon FARGATE es un servicio de gestión de infraestructura a partir de imágenes de contenedor diseñado para duraciones largas, permitiendo la ejecución 24/7. 
 
-El servicio _Lambda_ tiene varios límites de cuotas, entre ellos, uno de ejecuciones concurrentes, que asciende hasta las 1.000. Los límites de cuotas se pueden modificar, tanto cambios pequeños como grandes, aunque los grandes tendrán que ser revisados por el soporta y requerirán un poco más de tiempo para una resolución.
+El servicio _Lambda_ tiene varios límites de cuotas, entre ellos, uno de ejecuciones concurrentes que asciende hasta las 1.000. Los límites de cuotas se pueden modificar, tanto cambios pequeños como grandes, aunque los grandes tendrán que ser revisados por el soporta y requerirán un poco más de tiempo para una resolución.
 
 En este caso, no se cuenta con una VPC, ya que, para usar recursos _Lambda_ con DynamoDB es necesario modificar la tabla de rutas. Sin embargo, con el rol _LabRole_ no es posible la modificación de la red.
 
@@ -188,10 +206,11 @@ En este caso, no se cuenta con una VPC, ya que, para usar recursos _Lambda_ con 
 | **TOTAL** | 0,43 | 5,16 |
 
 #### Notas
-Lambda: 1 millón de solicituds/mes gratis (_free tier_) -> 0,2$ por millón e solicitudes y 
+Lambda: 1 millón de solicituds/mes gratis (_free tier_) -> 0,2$ por millón e solicitudes
 
 ## Uso de la IA
 El uso de la inteligencia artificial en esta práctica se describe a continuación:
  - Uso para desarrollo de interfaz gráfica (``shopList.html``) para probar el correcto despliegue de los recursos.
  - Uso para detección y solución de diversos errores a lo largo de la realización de la práctica y su despliegue.
  - Uso para desarrollo de script de despliegue de las funciones lambda.
+ - Uso para recopilación de información para el desarrollo y mejora continua de la memoria.
