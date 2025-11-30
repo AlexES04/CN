@@ -52,12 +52,9 @@ El **_ECS Cluster_** es un agrupamiento lógico, un espacio con un nombre donde 
 
 La **definición de tarea** o (_task definition_) es el plano que usa el ECS para crear un contenedor, asignando CPU y memoria, permiso que poseerá la tarea cuando esté funcionando y la definición del contenedor.
 
-En cuanto a **FARGATE** se vende que es un servicio _serverless_, ya que el usuario no tiene que crear instancias EC2 previamente, sino que es gestionado por AWS. En su lugar, se crean las tareas con la definición de tarea, haciendo que se pague por tarea en funcionamiento en vez de por instancia EC2.
+En cuanto a **FARGATE** se vende que es un servicio _serverless_, ya que el usuario no tiene que crear instancias EC2 previamente, sino que es gestionado por AWS. Su modo de ejecución es activo 24/7 y su modo de facturación es por segundo de ejecución. El escalado, por su parte, es muy lento, al tener que levantar una instancia más cuando se reciban grandes cantidades de peticiones. Básicamente, _FARGATE_ funciona de la siguiente manera: se crean las tareas con la definición de tarea (actuando como plano), haciendo que se pague por tarea en funcionamiento en vez de por instancia EC2.
 
 En el caso de que la infraestructura contara con **instancias EC2** en vez de _FARGATE_, surgiría la ncesidad de incluir un grupo de autoescalado (_auto scalling group_). Este recurso es el que tiene el objetivo de gestionar el número de instancias ejecutadas, como el _ECS Service_. Para que funcione correctamente, sería necesario la adición de un _ECS Capacity Provider_ vinculado a ese grupo de autoescalado.
-
-Igualmente, se destaca que, aunque _FARGATE_ se venda como un "motor de cómputo _serverless_", realmente, no lo es, ya que el modo de ejecución es activo 24/7 y el modo de facturación es por segundo de ejecución. El escalado, por su parte, es muy lento.
-
 
 El **_ECS Service_** es el componente que se encarga de mantener el estado deseado definido (``DesiredCount:``).
 
