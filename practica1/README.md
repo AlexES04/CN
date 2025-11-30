@@ -61,7 +61,9 @@ El **_ECS Service_** es el componente que se encarga de mantener el estado desea
 El grupo objetivo realiza sucesivamente comprobaciones de estado sobre la tarea asignada para marcarla como "_healthy_" y que el balanceador de carga pueda enviar el tráfico a las tareas marcadas así. Si alguna no estuviera correctamente funcionando (marcada como "_unhealthy_"), el _ECS Service_ terminará dicha tarea y lanzará una nueva cumpliendo con el estado deseado.
 
 #### Endpoints
-Los **_VPC Endpoints_** son puntos de contacto o comunicación que permiten disponer de un camino privado y directo entre una VPC y un servicio AWS evitando la salida a Internet. Los endpoints de tipo _gateway_ proporcionan una entrada en la tabla de rutas del VPC. Los endpoints de tipo _interface_ despliegan una Interfaz de Red Elástica (ENI) con dirección privada dentro del VPC. Una interfaz de red elástica es una tarjeta de red virtual que permite a los recursos conectarse a una VPC.
+Los **_VPC Endpoints_** son puntos de contacto o comunicación que permiten disponer de un camino privado y directo entre una VPC y un servicio AWS evitando la salida a Internet. Existen dos tipos de _VPC Endpoint_:
+- _Endpoint_ de tipo _gateway_: proporciona una entrada en la tabla de rutas del VPC.
+- _Endpoint_ de tipo _interface_: despliega una Interfaz de Red Elástica (ENI) con dirección privada dentro del VPC. Una interfaz de red elástica es una tarjeta de red virtual que permite a los recursos conectarse a una VPC.
 
 El **Endpoint para DynamoDB** permite la comunicación entre la aplicación y la base de datos. La definición de tarea lo usa cuando el código hace una llamada para modificar la base de datos (crear, ver, editar o eliminar un elemento).
 
@@ -129,7 +131,7 @@ En el caso de la arquitectura actual, se define una política para las peticione
 
 ### Pricing
 | Servicio/Recurso | Precio mensual ($) | Precio anual ($) |
-|--------------|--------------|--------------|
+|--------------|:--------------:|:--------------:|
 | Network Load Balancer       | 16,45       | 197,40  |
 | AWS FARGATE        | 4,43      | 53,16        |
 | VPC Endpoints | 26,90 | 322,80 |
@@ -198,7 +200,7 @@ En este caso, no se cuenta con una VPC, ya que, para usar recursos _Lambda_ con 
 
 ### Pricing
 | Servicio/Recurso | Precio mensual ($) | Precio anual ($) |
-|--------------|--------------|--------------|
+|--------------|:--------------:|:--------------:|
 | ECR | 0,43 | 5,16 | 
 | **TOTAL** | 0,43 | 5,16 |
 
