@@ -316,7 +316,7 @@ Resources:
   APIKey:
     Type: AWS::ApiGateway::ApiKey
     Properties:
-      Name: products-api-key
+      Name: products-api-key-lambda
       Enabled: true
 
   UsagePlan:
