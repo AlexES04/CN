@@ -41,7 +41,8 @@ El proceso _Extract, Transform, Load_ consiste en tomar datos sucios o crudos, l
 
 ### AWS Glue
 
-### Amazon EMR (Elastic MapReduce)
 
-### AWS Lambda (ETL ligero)
 
+## Kafka
+
+## Patrones de arquitectura de producción
