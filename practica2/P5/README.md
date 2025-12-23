@@ -29,6 +29,12 @@ En vez del botón de ejecutar, hay que ejecutar el siguiente comando:
 uv run <archivo>
 ```
 
+Hay que hacer ``aws configure``.
+
+Se ejecuta el script ``deploy_project.ps1``.
+Posteriormente, se ejecuta el archivo de Python ``kinesis.py``.
+Al final, cuando todo esté visualizado y se termine de trabajar, se ejecuta el script ``clean_up.ps1`` para limpiar los recursos creados.
+
 Cuando todo se ha subido a Kinesis Data Stream, se puede visualizar en su Visor de Datos. Si ocurre el error de no poder visualizarlos, se deberá seleccionar otra forma de visualización (en número de secuencia, después de...)
 # Descripción
 El objetivo es conectarse a AWS, en concreto, a Kinesis Data Stream. Se enviarán datos que llegarán a Kinesis para distribuirlo entre los consumidores.

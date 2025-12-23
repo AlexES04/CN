@@ -1,0 +1,54 @@
+############################################
+####        VARIABLES GLOBALES          ####
+############################################
+$ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+$BUCKET_NAME="datalake-consumo-energetico-$ACCOUNT_ID"
+$DATABASE="energy_db"
+
+Write-HOST "INICIANDO LIMPIEZA DE RECURSOS"
+
+###############################################
+###              AWS GLUE                   ###
+###############################################
+Write-Host "Eliminando Glue Jobs..."
+aws glue delete-job --job-name energy-daily-aggregation 2> $null
+aws glue delete-job --job-name energy-monthly-aggregation 2> $null
+
+Write-Host "Eliminando Glue Crawler..."
+aws glue delete-crawler --name energy-raw-crawler 2> $null
+
+Write-Host "Eliminando Glue Database..."
+aws glue delete-database --name $DATABASE 2> $null
+
+###############################################
+###               FIREHOSE                  ###
+###############################################
+Write-Host "Eliminando Kinesis Firehose..."
+aws firehose delete-delivery-stream --delivery-stream-name energy-delivery-stream 2> $null
+
+###############################################
+###                 LAMBDA                  ###
+###############################################
+Write-Host "Eliminando Lambda Function..."
+aws lambda delete-function --function-name energy-firehose-lambda 2> $null
+
+# Limpieza de archivos locales generados
+if (Test-Path "firehose.zip") { 
+    Write-Host "Eliminando archivo local firehose.zip..."
+    Remove-Item "firehose.zip"
+}
+
+###############################################
+###          KINESIS DATA STREAM            ###
+###############################################
+Write-Host "Eliminando Kinesis Data Stream..."
+aws kinesis delete-stream --stream-name energy-stream 2> $null
+
+###############################################
+###               BUCKET S3                 ###
+###############################################
+Write-Host "Vaciando y eliminando Bucket S3 ($BUCKET_NAME)..."
+# rb con --force elimina todos los objetos dentro antes de borrar el bucket
+aws s3 rb s3://$BUCKET_NAME --force 2> $null
+
+Write-Host "LIMPIEZA DE RECURSOS COMPLETADA"
