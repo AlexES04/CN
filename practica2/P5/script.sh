@@ -73,3 +73,13 @@ aws glue create-crawler `
 # En Editor, se escoge la tabla que se requiera.
 
 # Se elimina la Kinesis Data Stream, Firehose y la base de datos de AWS Glue.
+
+
+# ÚLTIMA PARTE DE LA PRÁCTICA
+
+zip firehose.zip firehose.py
+
+# Crear lambda
+
+# Código para actualizar código de la lambda ya creada
+

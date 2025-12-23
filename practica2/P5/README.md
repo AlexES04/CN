@@ -37,3 +37,10 @@ Posteriormente, de Kinesis Data Stream los datos se enviarán a AWS Data Firehos
 Más adelante, se añadirá una lambda en el Firehose que realice una ejecución pequeña: añadir un timestamp.
 
 El siguiente paso, será incluir AWS Glue
+
+No se pueden mandar muchos registros, lo mejor es que esté entre el intervalo: 864-50.000 registros.
+Hay que tener cuidado al elegir la clave de partición. Para elegir una adecuada, primero, hay que entender los datos. Por ejemplo, un dataset de coches, una clave de partición posible puede ser el país SIEMPRE Y CUANDO haya varios países que fabriquen coches y esté más o menos distribuido (USA 150M registros | ESP 15M registros | MXN 1M registros | COL 10k registros).
+La clave de partición permite hacer un filtrado rápido en un sistema complejo donde la filtración es muy costosa.
+
+### energy_aggregation_daily.py energy_aggregation_monthly.py
+Son scripts de Python que se diferencian en que en el _daily_ se procesan los datos por fecha hasta el mes y en el _monthly_ se procesan por fecha hasta el año.
