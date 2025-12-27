@@ -39,7 +39,7 @@ if (Test-Path "firehose.zip") {
 }
 
 if (Test-Path "config_firehose.json") { 
-    Write-Host "Eliminando archivo de configuración de Firehose..."
+    Write-Host "Eliminando archivo de configuracion de Firehose..."
     Remove-Item "config_firehose.json"
 }
 
@@ -55,5 +55,8 @@ aws kinesis delete-stream --stream-name energy-stream 2> $null
 Write-Host "Vaciando y eliminando Bucket S3 ($BUCKET_NAME)..."
 # rb con --force elimina todos los objetos dentro antes de borrar el bucket
 aws s3 rb s3://$BUCKET_NAME --force 2> $null
+
+Write-Host "Esperando a eliminacion completa..."
+Start-Sleep -Seconds 15
 
 Write-Host "LIMPIEZA DE RECURSOS COMPLETADA"

@@ -35,7 +35,7 @@ aws s3api put-object --bucket $BUCKET_NAME --key scripts/
 
 Write-host "Creando Kinesis Data Stream..."
 # Creación del Kinesis Data Stream.
-aws kinesis create-stream --stream-name energy-stream --shard-count 1
+aws kinesis create-stream --stream-name chapters-stream --shard-count 1
 
 
 ###############################################
@@ -104,7 +104,7 @@ Write-host "Creando recurso de Firehose..."
 aws firehose create-delivery-stream `
     --delivery-stream-name energy-delivery-stream `
     --delivery-stream-type KinesisStreamAsSource `
-    --kinesis-stream-source-configuration "KinesisStreamARN=arn:aws:kinesis:${AWS_REGION}:${ACCOUNT_ID}:stream/energy-stream,RoleARN=$ROLE_ARN" `
+    --kinesis-stream-source-configuration "KinesisStreamARN=arn:aws:kinesis:${AWS_REGION}:${ACCOUNT_ID}:stream/chapters-stream,RoleARN=$ROLE_ARN" `
     --extended-s3-destination-configuration file://config_firehose.json
 
 # Firehose mandará los datos que lleguen a Kinesis a partir del lanzamiento de Firehose, no los anteriores a él.
@@ -128,9 +128,7 @@ aws glue create-crawler `
     --database-name energy_db `
     --targets ($crawlerTargets.Replace('"', '\"'))
 
-aws glue start-crawler --name energy-raw-crawler
 
-Start-Sleep -Seconds 90
 # Para crear la DB en AWS Glue y el Crawler desde la interfaz se hará de la siguiente forma:
 # Se crea AWS Glue. Esto permite mantener bases de datos y tablas, y leerlas.
 # Primero se crea una Base de datos en AWS Glue - Data Catalog - Databases.
@@ -217,10 +215,6 @@ aws glue create-job `
     --glue-version "4.0" `
     --number-of-workers 2 `
     --worker-type "G.1X"
-
-Write-host "Ejecutando los trabajos de AWS GLUE..."
-aws glue start-job-run --job-name energy-daily-aggregation
-aws glue start-job-run --job-name energy-monthly-aggregation
 
 Write-host "Obteniendo nombres de los trabajos..."
 
