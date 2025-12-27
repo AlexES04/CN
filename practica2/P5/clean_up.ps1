@@ -38,6 +38,11 @@ if (Test-Path "firehose.zip") {
     Remove-Item "firehose.zip"
 }
 
+if (Test-Path "config_firehose.json") { 
+    Write-Host "Eliminando archivo de configuración de Firehose..."
+    Remove-Item "config_firehose.json"
+}
+
 ###############################################
 ###          KINESIS DATA STREAM            ###
 ###############################################
