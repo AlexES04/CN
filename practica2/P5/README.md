@@ -50,3 +50,22 @@ La clave de partición permite hacer un filtrado rápido en un sistema complejo 
 
 ### energy_aggregation_daily.py energy_aggregation_monthly.py
 Son scripts de Python que se diferencian en que en el _daily_ se procesan los datos por fecha hasta el mes y en el _monthly_ se procesan por fecha hasta el año.
+
+
+Orden de ejecución de scripts:
+```bash
+./project-deployment.ps1
+```
+
+```bash
+uv run kinesis.py
+```
+
+```bash
+./project-execution.ps1
+```
+
+Cuando se quiera borrar:
+```bash
+./project-deployment.ps1
+```
