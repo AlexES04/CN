@@ -32,7 +32,7 @@ uv run <archivo>
 Hay que hacer ``aws configure``.
 
 Se ejecuta el script ``deploy_project.ps1``.
-Posteriormente, se ejecuta el archivo de Python ``kinesis.py``.
+Posteriormente, se ejecuta el archivo de Python ``kinesis.py``. Luego ejecutar el archivo ``project-execution.ps1``.
 Al final, cuando todo esté visualizado y se termine de trabajar, se ejecuta el script ``clean_up.ps1`` para limpiar los recursos creados.
 
 Cuando todo se ha subido a Kinesis Data Stream, se puede visualizar en su Visor de Datos. Si ocurre el error de no poder visualizarlos, se deberá seleccionar otra forma de visualización (en número de secuencia, después de...)

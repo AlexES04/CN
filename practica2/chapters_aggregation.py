@@ -1,4 +1,3 @@
-# daily_aggregation.py
 import sys
 import logging
 from pyspark.context import SparkContext
@@ -32,11 +31,11 @@ def main():
     # df.printSchema()
     logger.info(f"Read registers: {df.count()}")
     
-    df = df.withColumn("year", substring(col("Release"), -4, 4))
+    df = df.withColumn("year", substring(col("release"), -4, 4))
     
     daily_df = df.groupBy("year") \
         .agg(
-            count("Chapter").alias("total_chapters"),
+            count("chapter").alias("total_chapters"),
         ) \
         .orderBy("year")
     
@@ -50,7 +49,7 @@ def main():
         connection_type="s3",
         connection_options={
             "path": output_path,
-            "partitionKeys": ["year"]
+            # "partitionKeys": ["year"]
         },
         format="parquet",
         format_options={"compression": "snappy"}

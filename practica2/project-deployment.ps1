@@ -3,15 +3,20 @@
 ############################################
 $AWS_REGION="us-east-1"
 $ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-$BUCKET_NAME="datalake-consumo-energetico-$ACCOUNT_ID"
+$BUCKET_NAME="datalake-one-piece-chapters-$ACCOUNT_ID"
 $ROLE_ARN=$(aws iam get-role --role-name LabRole --query 'Role.Arn' --output text)
 
-$DATABASE="energy_db"
-$TABLE="energy_consumption_five_minutes"
-$DAILY_OUTPUT="s3://$BUCKET_NAME/processed/energy_consumption_daily/"
-$DAILY_SCRIPT="s3://$BUCKET_NAME/scripts/energy_aggregation_daily.py"
+$DATABASE="chapters_db"
+$TABLE="chapters-first-100-volumes"
+
+$STREAM_NAME="chapters-stream"
+$LAMBDA_NAME="chapters-firehose-lambda" 
+$FIREHOSE_NAME="chapters-delivery-stream"
+
 $MONTHLY_SCRIPT="s3://$BUCKET_NAME/scripts/energy_aggregation_monthly.py"
 $MONTHLY_OUTPUT="s3://$BUCKET_NAME/processed/energy_consumption_monthly/"
+
+
 
 ###############################################
 ###                BUCKET S3                ###
@@ -22,7 +27,7 @@ aws s3 mb s3://$BUCKET_NAME
 
 # Creación de carpetas dentro del bucket creado.
 aws s3api put-object --bucket $BUCKET_NAME --key raw/
-aws s3api put-object --bucket $BUCKET_NAME --key raw/energy_consumption_five_minutes/
+aws s3api put-object --bucket $BUCKET_NAME --key "raw/${TABLE}/"
 aws s3api put-object --bucket $BUCKET_NAME --key processed/
 aws s3api put-object --bucket $BUCKET_NAME --key config/
 aws s3api put-object --bucket $BUCKET_NAME --key queries/
@@ -35,7 +40,7 @@ aws s3api put-object --bucket $BUCKET_NAME --key scripts/
 
 Write-host "Creando Kinesis Data Stream..."
 # Creación del Kinesis Data Stream.
-aws kinesis create-stream --stream-name chapters-stream --shard-count 1
+aws kinesis create-stream --stream-name $STREAM_NAME --shard-count 1
 
 
 ###############################################
@@ -48,7 +53,7 @@ Compress-Archive -Path firehose.py -DestinationPath firehose.zip
 Write-host "Creando Lambda..."
 # Creación de lambda.
 aws lambda create-function `
-    --function-name energy-firehose-lambda `
+    --function-name $LAMBDA_NAME `
     --runtime python3.12 `
     --role $ROLE_ARN `
     --handler firehose.lambda_handler `
@@ -56,7 +61,7 @@ aws lambda create-function `
     --timeout 60 `
     --memory-size 128
 
-$LAMBDA_ARN=$(aws lambda get-function --function-name energy-firehose-lambda --query 'Configuration.FunctionArn' --output text)
+$LAMBDA_ARN=$(aws lambda get-function --function-name $LAMBDA_NAME --query 'Configuration.FunctionArn' --output text)
 
 ###############################################
 ###                FIREHOSE                 ###
@@ -70,7 +75,7 @@ $firehoseConfig = @"
 {
     "BucketARN": "arn:aws:s3:::$BUCKET_NAME",
     "RoleARN": "$ROLE_ARN",
-    "Prefix": "raw/energy_consumption_five_minutes/processing_date=!{partitionKeyFromLambda:processing_date}/",
+    "Prefix": "raw/${TABLE}/volumes=!{partitionKeyFromLambda:volume_range}/",
     "ErrorOutputPrefix": "errors/!{firehose:error-output-type}/",
     "BufferingHints": {
         "SizeInMBs": 64,
@@ -102,9 +107,9 @@ $firehoseConfig | Out-File "config_firehose.json" -Encoding ASCII
 
 Write-host "Creando recurso de Firehose..."
 aws firehose create-delivery-stream `
-    --delivery-stream-name energy-delivery-stream `
+    --delivery-stream-name $FIREHOSE_NAME `
     --delivery-stream-type KinesisStreamAsSource `
-    --kinesis-stream-source-configuration "KinesisStreamARN=arn:aws:kinesis:${AWS_REGION}:${ACCOUNT_ID}:stream/chapters-stream,RoleARN=$ROLE_ARN" `
+    --kinesis-stream-source-configuration "KinesisStreamARN=arn:aws:kinesis:${AWS_REGION}:${ACCOUNT_ID}:stream/$STREAM_NAME,RoleARN=$ROLE_ARN" `
     --extended-s3-destination-configuration file://config_firehose.json
 
 # Firehose mandará los datos que lleguen a Kinesis a partir del lanzamiento de Firehose, no los anteriores a él.
@@ -117,15 +122,15 @@ Write-host "Creando base de datos..."
 aws glue create-database --database-input "Name=$DATABASE"
 
 $crawlerTargets = @"
-    {"S3Targets": [{"Path": "s3://$BUCKET_NAME/raw/energy_consumption_five_minutes/"}]}
+{"S3Targets": [{"Path": "s3://$BUCKET_NAME/raw/${TABLE}/"}]}
 "@
 
 Write-host "Creando crawler..."
 # Creación del crawler.
 aws glue create-crawler `
-    --name energy-raw-crawler `
+    --name chapters-raw-crawler `
     --role $ROLE_ARN `
-    --database-name energy_db `
+    --database-name ${DATABASE} `
     --targets ($crawlerTargets.Replace('"', '\"'))
 
 
@@ -150,15 +155,10 @@ aws glue create-crawler `
 ###############################################
 
 Write-host "Copiando scripts de agregación al bucket S3..."
-aws s3 cp energy_aggregation_daily.py s3://$BUCKET_NAME/scripts/
-aws s3 cp energy_aggregation_monthly.py s3://$BUCKET_NAME/scripts/
+aws s3 cp chapters_aggregation.py s3://$BUCKET_NAME/scripts/
 
-
-$TABLE="energy_consumption_five_minutes"
-$DAILY_OUTPUT="s3://$BUCKET_NAME/processed/energy_consumption_daily/"
-$DAILY_SCRIPT="s3://$BUCKET_NAME/scripts/energy_aggregation_daily.py"
-$MONTHLY_SCRIPT="s3://$BUCKET_NAME/scripts/energy_aggregation_monthly.py"
-$MONTHLY_OUTPUT="s3://$BUCKET_NAME/processed/energy_consumption_monthly/"
+$MONTHLY_SCRIPT="s3://$BUCKET_NAME/scripts/chapters_aggregation.py"
+$MONTHLY_OUTPUT="s3://$BUCKET_NAME/processed/chapters_volume/"
 
 $monthlyCMD = @"
     {
@@ -181,7 +181,7 @@ $monthlyArgs = @"
 # Creación de trabajos o tareas.
 Write-host "Creando los trabajos de AWS GLUE..."
 aws glue create-job `
-    --name energy-monthly-aggregation `
+    --name chapters-aggregation `
     --role $ROLE_ARN `
     --command ($monthlyCMD.Replace('"', '\"')) `
     --default-arguments ($monthlyArgs.Replace('"', '\"')) `
@@ -189,37 +189,9 @@ aws glue create-job `
     --number-of-workers 2 `
     --worker-type "G.1X"
 
-$dailyCMD = @"
-    {
-        "Name": "glueetl",
-        "ScriptLocation": "$DAILY_SCRIPT",
-        "PythonVersion": "3"
-    }
-"@
-
-$dailyArgs = @"
-    {
-        "--database": "$DATABASE",
-        "--table": "$TABLE",
-        "--output_path": "$DAILY_OUTPUT",
-        "--enable-continuous-cloudwatch-log": "true",
-        "--spark-event-logs-path": "s3://$BUCKET_NAME/logs/"
-    }
-"@
-
-aws glue create-job `
-    --name energy-daily-aggregation `
-    --role $ROLE_ARN `
-    --command ($dailyCMD.Replace('"', '\"')) `
-    --default-arguments ($dailyArgs.Replace('"', '\"')) `
-    --glue-version "4.0" `
-    --number-of-workers 2 `
-    --worker-type "G.1X"
-
 Write-host "Obteniendo nombres de los trabajos..."
 
-aws glue get-job-runs --job-name energy-daily-aggregation --max-items 1
-aws glue get-job-runs --job-name energy-monthly-aggregation --max-items 1
+aws glue get-job-runs --job-name chapters-aggregation --max-items 1
 
 # Se elimina la Kinesis Data Stream, Firehose y la base de datos de AWS Glue.
 Write-host "Despliegue finalizado correctamente."

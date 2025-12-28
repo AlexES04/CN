@@ -22,22 +22,22 @@ def run_producer():
 
     for row in data:
         payload = {
-            'Chapter': int(row.get('Chapter_Number', 0)),
-            'Volume': int(row.get('Volume', 0)),
-            'Title': row.get('Name', 'N/A'),
-            'Japanese_title': row.get('Romanized_title', 'N/A'),
-            'Pages': int(row.get('Pages', 0)),
-            'Release': row.get('Date', 'N/A')
+            'chapter': int(row.get('Chapter_Number', 0)),
+            'volume': int(row.get('Volume', 0)),
+            'title': row.get('Name', 'N/A'),
+            'japanese_title': row.get('Romanized_title', 'N/A'),
+            'pages': int(row.get('Pages', 0)),
+            'release': row.get('Date', 'N/A')
         }
 
         response = kinesis.put_record(
             StreamName = STREAM_NAME,
             Data = json.dumps(payload),
-            PartitionKey = str(payload['Volume'])
+            PartitionKey = str(payload['volume'])
         )
 
         records_sent += 1
-        logger.info(f"Sent record {records_sent}:\nEpisode {payload['Chapter']} of Volume {payload['Volume']} data with {response=}")
+        logger.info(f"Sent record {records_sent}:\nEpisode {payload['chapter']} of Volume {payload['volume']} data with {response=}")
         time.sleep(0.01)
 
 if __name__ == "__main__":

@@ -9,19 +9,26 @@ def lambda_handler(event, context):
         payload = base64.b64decode(record['data']).decode('utf-8')
         data_json = json.loads(payload)
         
-        # Add processing timestamp
-        processing_time = datetime.datetime.now(datetime.timezone.utc)
+        volume = int(data_json.get('volume', 0))
         
+        range_start = (volume // 10) * 10
+        range_end = range_start + 9
+
+        partition_value = f"{range_start:02d}-{range_end:02d}"
+        processed_data = json.dumps(data_json) + '\n'
+        
+        # Add processing timestamp
+        # processing_time = datetime.datetime.now(datetime.timezone.utc)
         # Create the partition key (YYYY-MM-DD format)
-        partition_date = processing_time.strftime('%Y-%m-%d')
+        # partition_date = processing_time.strftime('%Y-%m-%d')
         
         output_record = {
             'recordId': record['recordId'],
             'result': 'Ok',
-            'data': base64.b64encode((json.dumps(data_json) + '\n').encode('utf-8')).decode('utf-8'),
+            'data': base64.b64encode(processed_data.encode('utf-8')).decode('utf-8'),
             'metadata': {
                 'partitionKeys': {
-                    'processing_date': partition_date
+                    'volume_range': partition_value
                 }
             }
         }
