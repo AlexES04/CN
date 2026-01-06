@@ -3,6 +3,7 @@ from loguru import logger
 import time
 import json
 import csv
+from datetime import datetime
 
 STREAM_NAME = 'chapters-stream'
 INPUT_FILE = 'datos.csv'
@@ -21,13 +22,17 @@ def run_producer():
     logger.info(f"Initializing sending of {STREAM_NAME}. Reading {len(data)} registers.")
 
     for row in data:
+        raw_date = row.get('Date', 'N/A')
+        iso_date = datetime.strptime(raw_date, '%d/%m/%Y').strftime('%Y-%m-%d')
+
         payload = {
             'chapter': int(row.get('Chapter_Number', 0)),
             'volume': int(row.get('Volume', 0)),
             'title': row.get('Name', 'N/A'),
             'japanese_title': row.get('Romanized_title', 'N/A'),
             'pages': int(row.get('Pages', 0)),
-            'release': row.get('Date', 'N/A')
+            'release': iso_date,
+            'rating': float(row.get('Rating', 0))
         }
 
         response = kinesis.put_record(
