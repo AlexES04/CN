@@ -12,9 +12,12 @@ Write-HOST "INICIANDO LIMPIEZA DE RECURSOS"
 ###############################################
 Write-Host "Eliminando Glue Jobs..."
 aws glue delete-job --job-name chapters-aggregation 2> $null
+aws glue delete-job --job-name rating-aggregation 2> $null
 
 Write-Host "Eliminando Glue Crawler..."
 aws glue delete-crawler --name chapters-raw-crawler 2> $null
+aws glue delete-crawler --name chapters-processed-crawler 2> $null
+
 
 Write-Host "Eliminando Glue Database..."
 aws glue delete-database --name $DATABASE 2> $null

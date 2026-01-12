@@ -7,15 +7,11 @@ $BUCKET_NAME="datalake-one-piece-chapters-$ACCOUNT_ID"
 $ROLE_ARN=$(aws iam get-role --role-name LabRole --query 'Role.Arn' --output text)
 
 $DATABASE="chapters_db"
-$TABLE="chapters-first-100-volumes"
+$TABLE="chapters_first_100_volumes"
 
 $STREAM_NAME="chapters-stream"
 $LAMBDA_NAME="chapters-firehose-lambda" 
 $FIREHOSE_NAME="chapters-delivery-stream"
-
-$MONTHLY_SCRIPT="s3://$BUCKET_NAME/scripts/energy_aggregation_monthly.py"
-$MONTHLY_OUTPUT="s3://$BUCKET_NAME/processed/energy_consumption_monthly/"
-
 
 
 ###############################################
@@ -125,13 +121,25 @@ $crawlerTargets = @"
 {"S3Targets": [{"Path": "s3://$BUCKET_NAME/raw/${TABLE}/"}]}
 "@
 
-Write-host "Creando crawler..."
-# Creación del crawler.
+$crawlerTargetsProcessed = @"
+{"S3Targets": [{"Path": "s3://$BUCKET_NAME/processed/"}]}
+"@
+
+Write-host "Creando crawler de datos crudos..."
+# Creación de los crawler.
 aws glue create-crawler `
     --name chapters-raw-crawler `
     --role $ROLE_ARN `
     --database-name ${DATABASE} `
     --targets ($crawlerTargets.Replace('"', '\"'))
+
+Write-host "Creando crawler de datos procesados..."
+aws glue create-crawler `
+    --name chapters-processed-crawler `
+    --role $ROLE_ARN `
+    --database-name ${DATABASE} `
+    --targets ($crawlerTargetsProcessed.Replace('"', '\"'))
+
 
 
 # Para crear la DB en AWS Glue y el Crawler desde la interfaz se hará de la siguiente forma:
@@ -154,25 +162,46 @@ aws glue create-crawler `
 ###              AWS GLUE ETL               ###
 ###############################################
 
-Write-host "Copiando scripts de agregación al bucket S3..."
+Write-host "Copiando scripts de agregacon al bucket S3..."
 aws s3 cp chapters_aggregation.py s3://$BUCKET_NAME/scripts/
+aws s3 cp chapters_aggregation_rating.py s3://$BUCKET_NAME/scripts/
 
-$MONTHLY_SCRIPT="s3://$BUCKET_NAME/scripts/chapters_aggregation.py"
-$MONTHLY_OUTPUT="s3://$BUCKET_NAME/processed/chapters_volume/"
+$CHAPTERS_SCRIPT="s3://$BUCKET_NAME/scripts/chapters_aggregation.py"
+$CHAPTERS_OUTPUT="s3://$BUCKET_NAME/processed/chapters_by_year/"
+$RATING_SCRIPT="s3://$BUCKET_NAME/scripts/chapters_aggregation_rating.py"
+$RATING_OUTPUT="s3://$BUCKET_NAME/processed/ratings_by_year/"
 
-$monthlyCMD = @"
+$chaptersCMD = @"
     {
         "Name": "glueetl",
-        "ScriptLocation": "$MONTHLY_SCRIPT",
+        "ScriptLocation": "$CHAPTERS_SCRIPT",
         "PythonVersion": "3"
     }
 "@
 
-$monthlyArgs = @"
+$chaptersArgs = @"
     {
         "--database": "$DATABASE",
         "--table": "$TABLE",
-        "--output_path": "$MONTHLY_OUTPUT",
+        "--output_path": "$CHAPTERS_OUTPUT",
+        "--enable-continuous-cloudwatch-log": "true",
+        "--spark-event-logs-path": "s3://$BUCKET_NAME/logs/"
+    }
+"@
+
+$ratingCMD = @"
+    {
+        "Name": "glueetl",
+        "ScriptLocation": "$RATING_SCRIPT",
+        "PythonVersion": "3"
+    }
+"@
+
+$ratingArgs = @"
+    {
+        "--database": "$DATABASE",
+        "--table": "$TABLE",
+        "--output_path": "$RATING_OUTPUT",
         "--enable-continuous-cloudwatch-log": "true",
         "--spark-event-logs-path": "s3://$BUCKET_NAME/logs/"
     }
@@ -183,8 +212,17 @@ Write-host "Creando los trabajos de AWS GLUE..."
 aws glue create-job `
     --name chapters-aggregation `
     --role $ROLE_ARN `
-    --command ($monthlyCMD.Replace('"', '\"')) `
-    --default-arguments ($monthlyArgs.Replace('"', '\"')) `
+    --command ($chaptersCMD.Replace('"', '\"')) `
+    --default-arguments ($chaptersArgs.Replace('"', '\"')) `
+    --glue-version "4.0" `
+    --number-of-workers 2 `
+    --worker-type "G.1X"
+
+aws glue create-job `
+    --name rating-aggregation `
+    --role $ROLE_ARN `
+    --command ($ratingCMD.Replace('"', '\"')) `
+    --default-arguments ($ratingArgs.Replace('"', '\"')) `
     --glue-version "4.0" `
     --number-of-workers 2 `
     --worker-type "G.1X"
@@ -192,6 +230,8 @@ aws glue create-job `
 Write-host "Obteniendo nombres de los trabajos..."
 
 aws glue get-job-runs --job-name chapters-aggregation --max-items 1
+aws glue get-job-runs --job-name rating-aggregation --max-items 1
+
 
 # Se elimina la Kinesis Data Stream, Firehose y la base de datos de AWS Glue.
 Write-host "Despliegue finalizado correctamente."

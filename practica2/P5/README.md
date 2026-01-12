@@ -67,5 +67,5 @@ uv run kinesis.py
 
 Cuando se quiera borrar:
 ```bash
-./project-deployment.ps1
+./project-cleanup.ps1
 ```
