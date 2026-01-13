@@ -56,7 +56,6 @@ aws kinesis delete-stream --stream-name chapters-stream 2> $null
 ###               BUCKET S3                 ###
 ###############################################
 Write-Host "Vaciando y eliminando Bucket S3 ($BUCKET_NAME)..."
-# rb con --force elimina todos los objetos dentro antes de borrar el bucket
 aws s3 rb s3://$BUCKET_NAME --force 2> $null
 
 Write-Host "Esperando a eliminacion completa..."

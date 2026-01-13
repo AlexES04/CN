@@ -10,7 +10,6 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 def main():
-    # Mantenemos los mismos argumentos
     args = getResolvedOptions(sys.argv, ['database', 'table', 'output_path'])
     database = args['database']
     table = args['table']
@@ -21,13 +20,11 @@ def main():
     sc = SparkContext()
     glueContext = GlueContext(sc)
     
-    # 1. Leer desde Glue Catalog
     dynamic_frame = glueContext.create_dynamic_frame.from_catalog(
         database=database,
         table_name=table
     )
     
-    # 2. Convertir a Spark DataFrame
     df = dynamic_frame.toDF()
     logger.info(f"Read registers: {df.count()}")
     
@@ -50,7 +47,6 @@ def main():
     
     logger.info(f"Processed years: {output_dynamic_frame.count()}")
     
-    # 5. Escribir resultado en S3 (Parquet/Snappy)
     glueContext.write_dynamic_frame.from_options(
         frame=output_dynamic_frame,
         connection_type="s3",

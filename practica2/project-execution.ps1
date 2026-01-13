@@ -2,8 +2,8 @@ Write-Host "INICIANDO EJECUCION"
 
 Write-Host "Esperando a que Firehose termine durante 1 minuto..."
 Start-Sleep -Seconds 70
-Write-Host "Ejecutando crawler durante 2 minutos..."
 
+Write-Host "Ejecutando crawler durante 2 minutos..."
 aws glue start-crawler --name chapters-raw-crawler
 Start-Sleep -Seconds 120
 

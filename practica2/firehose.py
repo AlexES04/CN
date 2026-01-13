@@ -17,11 +17,6 @@ def lambda_handler(event, context):
         partition_value = f"{range_start:02d}-{range_end:02d}"
         processed_data = json.dumps(data_json) + '\n'
         
-        # Add processing timestamp
-        # processing_time = datetime.datetime.now(datetime.timezone.utc)
-        # Create the partition key (YYYY-MM-DD format)
-        # partition_date = processing_time.strftime('%Y-%m-%d')
-        
         output_record = {
             'recordId': record['recordId'],
             'result': 'Ok',

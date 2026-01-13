@@ -14,6 +14,7 @@ $LAMBDA_NAME="chapters-firehose-lambda"
 $FIREHOSE_NAME="chapters-delivery-stream"
 
 
+
 ###############################################
 ###                BUCKET S3                ###
 ###############################################
@@ -30,6 +31,8 @@ aws s3api put-object --bucket $BUCKET_NAME --key queries/
 aws s3api put-object --bucket $BUCKET_NAME --key errors/
 aws s3api put-object --bucket $BUCKET_NAME --key scripts/
 
+
+
 ###############################################
 ###          KINESIS DATA STREAM            ###
 ###############################################
@@ -37,6 +40,7 @@ aws s3api put-object --bucket $BUCKET_NAME --key scripts/
 Write-host "Creando Kinesis Data Stream..."
 # Creación del Kinesis Data Stream.
 aws kinesis create-stream --stream-name $STREAM_NAME --shard-count 1
+
 
 
 ###############################################
@@ -59,13 +63,11 @@ aws lambda create-function `
 
 $LAMBDA_ARN=$(aws lambda get-function --function-name $LAMBDA_NAME --query 'Configuration.FunctionArn' --output text)
 
+
+
 ###############################################
 ###                FIREHOSE                 ###
 ###############################################
-# Creación del recurso de Firehose.
-# Se le da un nombre, una fuente de datos (Kinesis Stream en este caso). Luego se le indica el ARN del Kinesis de donde vienen los datos y el rol con el que se puede leer.
-# Se le indica un bucket a donde va a enviar los dato y a qué prefijo de ese bucket
-# Por último, cuando pasan 60s o ya se acumula 1MB de mensajes, envía los datos.
 
 $firehoseConfig = @"
 {
@@ -108,7 +110,7 @@ aws firehose create-delivery-stream `
     --kinesis-stream-source-configuration "KinesisStreamARN=arn:aws:kinesis:${AWS_REGION}:${ACCOUNT_ID}:stream/$STREAM_NAME,RoleARN=$ROLE_ARN" `
     --extended-s3-destination-configuration file://config_firehose.json
 
-# Firehose mandará los datos que lleguen a Kinesis a partir del lanzamiento de Firehose, no los anteriores a él.
+
 
 ###############################################
 ###            AWS GLUE Y CRAWLER           ###
@@ -139,22 +141,6 @@ aws glue create-crawler `
     --role $ROLE_ARN `
     --database-name ${DATABASE} `
     --targets ($crawlerTargetsProcessed.Replace('"', '\"'))
-
-
-
-# Para crear la DB en AWS Glue y el Crawler desde la interfaz se hará de la siguiente forma:
-# Se crea AWS Glue. Esto permite mantener bases de datos y tablas, y leerlas.
-# Primero se crea una Base de datos en AWS Glue - Data Catalog - Databases.
-# Luego se añade una tabla (usando un crawler). Indicando de dónde sacan los datos (S3) y el prefijo. Luego, se 
-# Se especifica el rol de IAM.
-# Y la base de datos a la que se va a mandar la tabla.
-# Y la frecuencia con la que se ejecuta el crawler.
-
-
-#En Athena en Configuración de consultas, se da a Administrar y se añade el prefijo queries/ del S3.
-# En Editor, se escoge la tabla que se requiera.
-
-
 
 
 
